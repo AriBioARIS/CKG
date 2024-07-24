@@ -1,0 +1,30 @@
+increment_project_id:
+    name:  create new external identifier 
+    description: 'Returns a new Project identifier based on the existing projects in the database (sequential identifier)'
+    involved_nodes:
+        - Project
+    involved_rels:
+    query: >
+        MATCH (p:Project) 
+        WITH max(p.id) AS last_project, toInteger(SPLIT(max(p.id), 'P')[1])+1 AS new_external_id
+        RETURN last_project, new_external_id;
+subject_number:
+    name:
+    description:
+    involved_nodes:
+        - Project
+    involved_rels:
+    query: >
+        MATCH (p:Project {id:$external_id})
+        RETURN p.subjects
+check_node:
+    name: check node exists
+    description: 'Returns node identifier if property with value exists in any specified node'
+    involved_nodes:
+        - Project
+    involved_rels:
+    query: >
+        MATCH (n:NODE) WHERE n.PROPERTY=$value
+        RETURN n.name;
+
+

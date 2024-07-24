@@ -1,0 +1,22 @@
+    ###### FOODB Database ########
+database_url: 'https://foodb.ca/public/system/downloads/foodb_2020_4_7_csv.tar.gz'
+files: 
+    - 'Food.csv'
+entities_header: 
+    - 'ID'
+    - 'name'
+    - 'scientific_name'
+    - 'description'
+    - 'group'
+    - 'subgroup'
+    - 'source'
+relationships_headers: 
+    'food':
+        - 'START_ID'
+        - 'END_ID'
+        - 'TYPE'
+        - 'min'
+        - 'max'
+        - 'average'
+        - 'units'
+        - 'source'

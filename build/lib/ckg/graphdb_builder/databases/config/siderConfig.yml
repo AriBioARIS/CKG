@@ -1,0 +1,20 @@
+#### SIDER database #####
+SIDER_url: 'http://sideeffects.embl.de/media/download/meddra_all_se.tsv.gz'
+SIDER_indications: 'http://sideeffects.embl.de/media/download/meddra_all_indications.tsv.gz'
+SIDER_source: 'UMLS'
+
+header: 
+    - 'START_ID'
+    - 'END_ID'
+    - 'TYPE'
+    - 'source'
+    - 'original_side_effect'
+    - 'evidence_from'
+
+indications_header: 
+    - 'START_ID'
+    - 'END_ID'
+    - 'TYPE'
+    - 'evidence'
+    - 'source'
+    - 'original_side_effect'

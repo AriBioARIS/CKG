@@ -1,0 +1,32 @@
+data exploration:
+    clinical_correlation:
+        data: 
+            proteomics: processed
+            clinical: processed
+        analyses:
+            - multi_correlation
+        plots:
+            - network
+        store_analysis: True
+        args:
+            on_cols: 
+                - subject
+                - group
+            source: node1
+            target: node2
+            title: 'Clinical-Proteomics correlation network'
+            format: edgelist
+            method: spearman
+            values: weight
+            dist: False
+            node_properties: {}
+            maxLinkWidth: 6
+            maxRadius: 20
+            node_size: 'degree'
+            cutoff: 0.5
+            subject: subject
+            cutoff_abs: True
+            color_weight: True
+            communities_algorithm: louvain
+            width: 1600
+            height: 1600

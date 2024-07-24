@@ -1,0 +1,176 @@
+########################
+directories:
+    dataDirectory: '../../data'
+    #Import directory
+    importDirectory: '../../data/imports'
+    #Archive directory
+    archiveDirectory: '../../data/archive'
+    #Stats directory
+    statsDirectory: '../../data/imports/stats'
+    #experiments import directory
+    experimentsDirectory: '../../data/imports/experiments'
+    #databases import diretory
+    databasesDirectory: '../../data/imports/databases'
+    #ontologies import diretory
+    ontologiesDirectory: '../../data/imports/ontologies'
+    #curated import directory
+    curatedDirectory: '../../data/imports/curated'
+    #users directory
+    usersDirectory: '../../data/users'
+    usersImportDirectory: '../../data/imports/users'
+    #temp directory
+    tmpDirectory: '../../data/tmp'
+    #Downloads directory
+    downloadsDirectory : '../../data/downloads'
+
+separator: '|'
+
+file_clinical: 'ClinicalData_PROJECTID'
+file_project: 'ProjectData_PROJECTID'
+file_design: 'ExperimentalDesign_PROJECTID'
+file_proteomics:
+    maxquant-protein groups: proteinGroups.txt
+    maxquant-peptides: peptides.txt
+    maxquant-oxidation: Oxidation (M)Sites.txt
+    maxquant-glycation: GlycationSites.txt
+    maxquant-phospho sty sites: Phospho (STY)Sites.txt
+
+download: True
+
+cypher_queries_file: 'cypher.yml'
+
+usersFile: 'CKG_users.xlsx'
+
+statsFile: 'stats.hdf'
+statsCols: 
+    - 'date'
+    - 'time'
+    - 'dataset'
+    - 'filename'
+    - 'file_size'
+    - 'Imported_number'
+    - 'Import_type'
+    - 'name'
+    - 'updated_on'
+
+#Full Graph
+graph: 
+    - ontologies
+    - chromosomes
+    - genes
+    - transcripts
+    - proteins
+    - annotations
+    - modified_proteins
+    - complexes
+    - ppi
+    - diseases
+    - biomarkers
+    - qcmarkers
+    - drugs
+    - food
+    - known_variants
+    - clinical_variants
+    - pathology_expression
+    - mentions
+    - jensenlab
+    - functional_regions
+    - side_effects
+    - metabolite
+    - protein_structure
+    - gwas
+    - pathway
+    - published
+    - user
+    - project
+    - experiment
+
+#Imports 
+ontology_entities: 
+    - 'Disease'
+    - 'Tissue'
+    - 'Biological_process'
+    - 'Molecular_function'
+    - 'Cellular_component'
+    - 'Modification'
+    - 'Clinical_variable'
+    - 'Phenotype'
+    - 'Experiment'
+    - 'Experimental_factor'
+    - 'Units'
+ontology_mappings:
+    Experimental_factor: 
+        - Disease
+        - Clinical_variable
+        - Phenotype
+#Database resources
+#Modified proteins
+modified_proteins_resources:
+    - 'psp'
+    - 'signor'
+modified_proteins_annotation_resources:
+    - psp
+#Protein complexes
+complexes_resources:
+    - 'CORUM'
+#Protein-protein interactions
+curated_PPI_resources:
+    - 'IntAct'
+compiled_PPI_resources:
+    - 'STRING'
+PPI_action_resources:
+    - 'STRING'
+#Disease associations
+disease_resources: 
+    - ['Protein','DisGEnet']
+#Pathology Expression
+pathology_expression_resources: 
+    - 'HPA'
+#Drug associations, indications and actions
+curated_drug_resources:
+    - 'DGIdb'
+    - 'CGI'
+    - 'OncoKB'
+compiled_drug_resources:
+    - 'STITCH'
+drug_action_resources:
+    - 'STITCH'
+drug_drug_interaction_resources:
+    - 'DrugBank'
+side_effects_resources:
+    - 'SIDER'
+
+#Variants
+clinical_variant_resources:
+    - 'CGI'
+    - 'OncoKB'
+
+#Pathways
+pathway_resources:
+    - 'Reactome'
+    - 'SMPDB'
+
+#Metabolites
+metabolite_resources:
+    - 'hmdb'
+
+#Food
+food_resources:
+    - 'FooDB'
+
+#Internal Databases entities
+jensenlabEntities:
+    - ['Protein','Disease']
+    - ['Protein', 'Tissue']
+    - ['Protein','Cellular_component']
+
+#Mentions entities
+mentionEntities: 
+    - 'Disease'
+    - 'Tissue'
+    - 'Protein'
+    - 'Drug'
+    - 'Cellular_component'
+    - 'Modified_protein'
+publicationEntities:
+    - 'GWAS_study'
