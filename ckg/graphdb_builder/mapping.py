@@ -58,7 +58,7 @@ def getMappingFromOntology(ontology, source=None):
     dirFile = os.path.join(ckg_config["ontologies_directory"], ont)
     mapping_file = os.path.join(dirFile, "complete_mapping.tsv")
     max_wait = 0
-    while not os.path.isfile(mapping_file) and max_wait < 64:
+    while not os.path.isfile(mapping_file) and max_wait < 128:
         time.sleep(5)
         max_wait += 1
     try:
@@ -96,7 +96,7 @@ def getMappingForEntity(entity):
     if entity in dbconfig["sources"]:
         mapping_file = os.path.join(ckg_config["databases_directory"], os.path.join(dbconfig["sources"][entity], "complete_mapping.tsv"))
         max_wait = 0
-        while not os.path.isfile(mapping_file) and max_wait < 64:
+        while not os.path.isfile(mapping_file) and max_wait < 128:
             time.sleep(15)
             max_wait += 1
 
@@ -126,7 +126,7 @@ def getMultipleMappingForEntity(entity):
     if entity in dbconfig["sources"]:
         mapping_file = os.path.join(ckg_config["databases_directory"], os.path.join(dbconfig["sources"][entity], "complete_mapping.tsv"))
         max_wait = 0
-        while not os.path.isfile(mapping_file) and max_wait < 64:
+        while not os.path.isfile(mapping_file) and max_wait < 128:
             time.sleep(5)
             max_wait += 1
 
