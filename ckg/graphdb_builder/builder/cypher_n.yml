@@ -32,6 +32,31 @@ IMPORT_ONTOLOGY_DATA:
         MATCH (e2:ENTITY{id:line.END_ID})
         MERGE (e1)-[r:HAS_PARENT]->(e2)
         RETURN COUNT(r) AS c;
+        CREATE CONSTRAINT IF NOT EXISTS FOR (e:ENTITY) REQUIRE e.id IS UNIQUE;
+        CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.name);
+        
+        CALL {
+            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY.tsv" AS line
+            FIELDTERMINATOR '\t'
+            MERGE (e:ENTITY {id: line.ID})
+            ON CREATE SET e.name = line.name,
+                          e.description = line.description,
+                          e.type = line.type,
+                          e.synonyms = CASE WHEN line.synonyms IS NOT NULL AND line.synonyms <> '' 
+                                            THEN SPLIT(line.synonyms, ',') 
+                                            ELSE [] END
+            RETURN COUNT(e) AS entity_count
+        } IN TRANSACTIONS OF 10000 ROWS
+        
+        CALL {
+            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_has_parent.tsv" AS line
+            FIELDTERMINATOR '\t'
+            MATCH (e1:ENTITY {id: line.START_ID})
+            MATCH (e2:ENTITY {id: line.END_ID})
+            MERGE (e1)-[r:HAS_PARENT]->(e2)
+            RETURN COUNT(r) AS relationship_count
+        } IN TRANSACTIONS OF 10000 ROWS
+
 
 IMPORT_ONTOLOGY_MAPPING_DATA:
     'name': "import ontology mappings"
