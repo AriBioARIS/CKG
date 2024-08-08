@@ -120,6 +120,7 @@ def updateDB(driver, imports=None, specific=[]):
                 code = cypher_queries['IMPORT_BIOMARKERS']['query']
                 import_dir = quote(ckg_config['imports_curated_directory'], safe='/:')
                 queries = code.replace("IMPORTDIR", import_dir).split(';')[0:-1]
+                print(queries)
                 print('Done Loading biomarkers')
             elif i == "qcmarkers":
                 code = cypher_queries['IMPORT_QCMARKERS']['query']
