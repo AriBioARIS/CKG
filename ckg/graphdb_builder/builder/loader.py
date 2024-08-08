@@ -333,6 +333,9 @@ def updateDB(driver, imports=None, specific=[]):
             logger.error("Loading: {}: {}, file: {}, line: {}".format(i, err, fname, exc_tb.tb_lineno))
 
 def split_cypher_statements(query):
+    # Remove any leading non-Cypher text (e.g., comments, metadata)
+    query = re.sub(r'^[^A-Z]+', '', query, flags=re.MULTILINE)
+    
     statements = []
     current_statement = []
     in_quotes = False
@@ -357,7 +360,8 @@ def split_cypher_statements(query):
     if current_statement:
         statements.append(' '.join(current_statement))
     
-    return statements
+    return [s.strip() for s in statements if s.strip()]
+
 
 def fullUpdate():
     """
