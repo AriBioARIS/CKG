@@ -36,7 +36,6 @@ try:
 except Exception as err:
     logger.error("Reading configuration > {}.".format(err))
 
-
 def load_into_database(driver, queries, requester):
     """
     This function runs the queries provided in the graph database using a neo4j driver.
@@ -50,12 +49,16 @@ def load_into_database(driver, queries, requester):
     result = None
     for query in queries:
         try:
-            if "file" in query:
+            if query.strip().lower().startswith("call apoc.periodic.iterate"):
+                # This is an APOC query, don't add a semicolon
+                result = connector.commitQuery(driver, query)
+            elif "file" in query:
                 matches = re.search(regex, query)
                 if matches:
                     file_path = matches.group(1)
                     if os.path.isfile(unquote(file_path)):
-                        result = connector.commitQuery(driver, query+";")
+                        # Add semicolon only if it's not already there
+                        result = connector.commitQuery(driver, query if query.strip().endswith(';') else query + ";")
                         record = result.single()
                         if record is not None and 'c' in record:
                             counts = record['c']
@@ -68,13 +71,15 @@ def load_into_database(driver, queries, requester):
                     else:
                         logger.error("Error loading: File does not exist. Query: {}".format(query))
             else:
-                result = connector.commitQuery(driver, query+";")
+                # Add semicolon only if it's not already there
+                result = connector.commitQuery(driver, query if query.strip().endswith(';') else query + ";")
         except Exception as err:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             logger.error("Loading: {}, file: {}, line: {} - query: {}".format(err, fname, exc_tb.tb_lineno, query))
 
     return result
+
 
 
 def updateDB(driver, imports=None, specific=[]):
@@ -119,13 +124,15 @@ def updateDB(driver, imports=None, specific=[]):
             elif i == "biomarkers":
                 code = cypher_queries['IMPORT_BIOMARKERS']['query']
                 import_dir = quote(ckg_config['imports_curated_directory'], safe='/:')
-                queries = code.replace("IMPORTDIR", import_dir).split(';')[0:-1]
-                print(queries)
+                queries = [code.replace("IMPORTDIR", import_dir)]
+                #queries = code.replace("IMPORTDIR", import_dir).split(';')[0:-1]
+                #print(queries)
                 print('Done Loading biomarkers')
             elif i == "qcmarkers":
                 code = cypher_queries['IMPORT_QCMARKERS']['query']
                 import_dir = quote(ckg_config['imports_curated_directory'], safe='/:')
-                queries = code.replace("IMPORTDIR", import_dir).split(';')[0:-1]
+                queries = [code.replace("IMPORTDIR", import_dir)]
+                #queries = code.replace("IMPORTDIR", import_dir).split(';')[0:-1]
                 print('Done Loading qcmarkers')
             elif i == "chromosomes":
                 code = cypher_queries['IMPORT_CHROMOSOME_DATA']['query']
