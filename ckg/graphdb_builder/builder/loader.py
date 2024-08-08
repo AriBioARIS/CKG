@@ -55,7 +55,6 @@ def load_into_database(driver, queries, requester):
                 if matches:
                     file_path = matches.group(1)
                     if os.path.isfile(unquote(file_path)):
-                        print(query + ";")
                         result = connector.commitQuery(driver, query+";")
                         record = result.single()
                         if record is not None and 'c' in record:
@@ -101,14 +100,12 @@ def updateDB(driver, imports=None, specific=[]):
         queries = []
         logger.info("Loading {} into the database".format(i))
         try:
-            import_dir = quote("import/databases", safe='/:')
-            #import_dir = quote(ckg_config['imports_databases_directory'], safe='/:')
+            import_dir = quote(ckg_config['imports_databases_directory'], safe='/:')
             if i == "ontologies":
                 entities = [e.lower() for e in config["ontology_entities"]]
                 if len(specific) > 0:
                     entities = list(set(entities).intersection([s.lower() for s in specific]))
-                import_dir = quote("import/ontologies", safe='/:')
-                #import_dir = quote(ckg_config['imports_ontologies_directory'], safe='/:')
+                import_dir = quote(ckg_config['imports_ontologies_directory'], safe='/:')
                 ontologyDataImportCode = cypher_queries['IMPORT_ONTOLOGY_DATA']['query']
                 for entity in entities:
                     queries.extend(ontologyDataImportCode.replace("ENTITY", entity.capitalize()).replace("IMPORTDIR", import_dir).split(';')[0:-1])
@@ -121,16 +118,12 @@ def updateDB(driver, imports=None, specific=[]):
                 print('Done Loading ontologies')
             elif i == "biomarkers":
                 code = cypher_queries['IMPORT_BIOMARKERS']['query']
-                import_dir = "import/curated"
-                #import_dir = quote(ckg_config['imports_curated_directory'], safe='/:')
+                import_dir = quote(ckg_config['imports_curated_directory'], safe='/:')
                 queries = code.replace("IMPORTDIR", import_dir).split(';')[0:-1]
-                for query in queries:
-                    print(query)
                 print('Done Loading biomarkers')
             elif i == "qcmarkers":
                 code = cypher_queries['IMPORT_QCMARKERS']['query']
-                import_dir = "import/curated"
-                #import_dir = quote(ckg_config['imports_curated_directory'], safe='/:')
+                import_dir = quote(ckg_config['imports_curated_directory'], safe='/:')
                 queries = code.replace("IMPORTDIR", import_dir).split(';')[0:-1]
                 print('Done Loading qcmarkers')
             elif i == "chromosomes":
@@ -272,8 +265,7 @@ def updateDB(driver, imports=None, specific=[]):
                 queries.extend(code.replace("IMPORTDIR", usersDir).split(';')[0:-1])
                 print('Done Loading user')
             elif i == "project":
-                import_dir = quote("import/experiments", safe='/:')
-                #import_dir = quote(ckg_config['imports_experiments_directory'], safe='/:')
+                import_dir = quote(ckg_config['imports_experiments_directory'], safe='/:')
                 projects = builder_utils.listDirectoryFolders(import_dir)
                 if len(specific) > 0:
                     projects = list(set(projects).intersection(specific))
@@ -286,8 +278,7 @@ def updateDB(driver, imports=None, specific=[]):
                         queries.extend(code.replace("IMPORTDIR", projectDir).replace('PROJECTID', project).split(';')[0:-1])
                 print('Done Loading project')
             elif i == "experiment":
-                import_dir = quote("import/experiments", safe='/:')
-                #import_dir = quote(ckg_config['imports_experiments_directory'], safe='/:')
+                import_dir = quote(ckg_config['imports_experiments_directory'], safe='/:')
                 datasets_cypher = cypher_queries['IMPORT_DATASETS']
                 projects = builder_utils.listDirectoryFolders(import_dir)
                 if len(specific) > 0:
