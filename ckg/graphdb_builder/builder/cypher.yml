@@ -2,7 +2,7 @@ COUNT_RELATIONSHIPS:
     'name': "count_relationships"
     'description': "Counts the number of relationships of a given type"
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:RELATIONSHIP]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:RELATIONSHIP]-();
         CREATE INDEX IF NOT EXISTS FOR (n:ENTITY1) ON (n.id);
         CREATE INDEX IF NOT EXISTS FOR (n:ENTITY2) ON (n.id);
         MATCH (:ENTITY1)-[:RELATIONSHIP]->(:ENTITY2)
@@ -12,7 +12,7 @@ REMOVE_RELATIONSHIPS:
     'name': "remove_relationship"
     'description': "Removes the specified relationship type between the specified entity types"
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:RELATIONSHIP]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:RELATIONSHIP]-();
         CREATE INDEX IF NOT EXISTS FOR (n:ENTITY1) ON (n.id);
         CREATE INDEX IF NOT EXISTS FOR (n:ENTITY2) ON (n.id);
         CALL {
@@ -34,7 +34,6 @@ REMOVE_NODE:
         ) YIELD batches, total
         RETURN batches, total;
 
-
 IMPORT_ONTOLOGY_DATA:
     'name': "import ontology data"
     'description': "Creates all the ontology nodes and has parent relationships"
@@ -42,7 +41,8 @@ IMPORT_ONTOLOGY_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (e:ENTITY) REQUIRE e.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.name);
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.type);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_PARENT]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_PARENT]-();
         
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY.tsv" AS line
@@ -72,7 +72,7 @@ IMPORT_ONTOLOGY_MAPPING_DATA:
     'name': "import ontology mappings"
     'description': "Creates relationships between different ontologies (i.e (EFO)-[:MAPS_TO]->(Disease)"
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:MAPS_TO]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:MAPS_TO]-();
         
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY1_maps_to_ENTITY2.tsv" AS line
@@ -95,9 +95,9 @@ IMPORT_PROTEIN_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Peptide) REQUIRE p.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Transcript) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SEQUENCE]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_PROTEIN]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSLATED_INTO]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SEQUENCE]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_PROTEIN]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSLATED_INTO]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein.tsv" AS line
@@ -183,8 +183,8 @@ IMPORT_FUNCTIONAL_REGIONS:
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Functional_region) REQUIRE f.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOUND_IN_PROTEIN]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:MENTIONED_IN_PUBLICATION]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOUND_IN_PROTEIN]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:MENTIONED_IN_PUBLICATION]-();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Functional_region.tsv" AS line
@@ -231,9 +231,9 @@ IMPORT_MODIFIED_PROTEINS:
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Peptide) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBSTRATE_OF]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBSTRATE_OF]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Modified_protein.tsv" AS line
@@ -301,7 +301,7 @@ IMPORT_PROTEIN_ANNOTATIONS:
         CREATE INDEX IF NOT EXISTS FOR (c:Cellular_component) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (f:Molecular_function) ON (f.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Cellular_component_associated_with.tsv" AS line
@@ -352,7 +352,7 @@ IMPORT_PATHOLOGY_EXPRESSION:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:DETECTED_IN_PATHOLOGY_SAMPLE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:DETECTED_IN_PATHOLOGY_SAMPLE]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_detected_in_pathology_sample.tsv" AS line
@@ -381,8 +381,8 @@ IMPORT_COMPLEXES:
         CREATE CONSTRAINT IF NOT EXISTS FOR (c:Complex) REQUIRE c.name IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBUNIT_OF]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBUNIT_OF]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Complex.tsv" AS line
@@ -438,7 +438,7 @@ IMPORT_MODIFIED_PROTEIN_ANNOTATIONS:
         CREATE INDEX IF NOT EXISTS FOR (m:Modified_protein) ON (m.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_disease_associated_with.tsv" AS line
@@ -478,7 +478,7 @@ IMPORT_PROTEIN_STRUCTURES:
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Protein_structure) REQUIRE p.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_STRUCTURE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_STRUCTURE]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_structures.tsv" AS line
@@ -528,8 +528,8 @@ IMPORT_TRANSCRIPT_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (t:Transcript) REQUIRE t.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (c:Chromosome) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:LOCATED_IN]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSCRIBED_INTO]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:LOCATED_IN]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSCRIBED_INTO]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Transcript.tsv" AS line
@@ -588,7 +588,7 @@ IMPORT_CURATED_PPI_DATA:
     'description': 'Loads into the database all the PPI from curated sources i.e. Intact database'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_INTERACTS_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_INTERACTS_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with.tsv" AS line
@@ -617,7 +617,7 @@ IMPORT_COMPILED_PPI_DATA:
     'description': 'Loads into the database all the PPI from sources that compile/aggregate evidence from different resources i.e. STRING database'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_INTERACTS_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_INTERACTS_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with.tsv" AS line
@@ -647,7 +647,7 @@ IMPORT_JENSENLAB_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY1) ON (e.id);
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY2) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY1_ENTITY2_associated_with_integrated.tsv" AS line
@@ -693,7 +693,7 @@ IMPORT_MENTIONS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:MENTIONED_IN_PUBLICATION]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:MENTIONED_IN_PUBLICATION]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_Publication_mentioned_in_publication.tsv" AS line
@@ -711,7 +711,7 @@ IMPORT_PUBLISHED_IN:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:PUBLISHED_IN]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:PUBLISHED_IN]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_published_in_publication.tsv" AS line
@@ -729,7 +729,7 @@ IMPORT_VARIANT_FOUND_IN_GWAS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (v:Known_variant) ON (v.external_id);
         CREATE INDEX IF NOT EXISTS FOR (g:GWAS_study) ON (g.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GWAS]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GWAS]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/GWAS_study_variant_found_in_gwas.tsv" AS line
@@ -755,7 +755,7 @@ IMPORT_GWAS_STUDIES_TRAIT:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (g:GWAS_study) ON (g.id);
         CREATE INDEX IF NOT EXISTS FOR (e:Experimental_factor) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TRAIT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TRAIT]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/GWAS_study_studies_trait.tsv" AS line
@@ -773,7 +773,7 @@ IMPORT_DISEASE_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_RESOURCE_associated_with.tsv" AS line
@@ -852,7 +852,7 @@ IMPORT_DRUG_INTERACTION_DATA:
     'description': 'Loads all the interactions between Drugs from different resources i.e. DrugBank'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:INTERACTS_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:INTERACTS_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with_drug.tsv" AS line
@@ -873,7 +873,7 @@ IMPORT_CURATED_DRUG_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_TARGETS]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_TARGETS]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_targets.tsv" AS line
@@ -898,7 +898,7 @@ IMPORT_COMPILED_DRUG_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_TARGETS]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_TARGETS]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with.tsv" AS line
@@ -925,7 +925,7 @@ IMPORT_PPI_ACTION:
     'description': 'Loads all the PPI and the resulting activity of the interaction'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_acts_on_protein.tsv" AS line
@@ -948,8 +948,8 @@ IMPORT_DRUG_SIDE_EFFECTS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Phenotype) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SIDE_EFFECT]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_INDICATED_FOR]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SIDE_EFFECT]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_INDICATED_FOR]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_has_side_effect.tsv" AS line
@@ -983,7 +983,7 @@ IMPORT_DRUG_ACTS_ON:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_drug_acts_on_protein.tsv" AS line
@@ -1008,7 +1008,7 @@ IMPORT_PATHWAY_DATA:
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ANNOTATED_IN_PATHWAY]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ANNOTATED_IN_PATHWAY]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Pathway.tsv" AS line
@@ -1076,7 +1076,7 @@ IMPORT_METABOLITE_DATA:
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Metabolite.tsv" AS line
@@ -1136,7 +1136,7 @@ IMPORT_FOOD_DATA:
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Food) REQUIRE f.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CONTENT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CONTENT]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Food.tsv" AS line
@@ -1174,7 +1174,7 @@ IMPORT_BIOMARKERS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_BIOMARKER_OF_DISEASE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_BIOMARKER_OF_DISEASE]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/protein_is_biomarker_of_disease.tsv" AS line
@@ -1204,7 +1204,7 @@ IMPORT_QCMARKERS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_QCMARKER_IN_TISSUE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_QCMARKER_IN_TISSUE]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/protein_is_qcmarker_in_tissue.tsv" AS line
@@ -1226,10 +1226,10 @@ IMPORT_KNOWN_VARIANT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (c:Chromosome) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_PROTEIN]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_AFFECTS_INTERACTION_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_PROTEIN]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_AFFECTS_INTERACTION_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Known_variant.tsv" AS line
@@ -1301,9 +1301,9 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (k:Known_variant) ON (k.pvariant_id);
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_IS_CLINICALLY_RELEVANT]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:TARGETS_CLINICALLY_RELEVANT_VARIANT]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_IS_CLINICALLY_RELEVANT]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:TARGETS_CLINICALLY_RELEVANT_VARIANT]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Clinically_relevant_variant.tsv" AS line
@@ -1388,11 +1388,11 @@ proteomics_class: &proteomics_class
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Peptide) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PROTEIN]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PEPTIDE]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_MODIFIED_PROTEIN]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PROTEIN]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PEPTIDE]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_MODIFIED_PROTEIN]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_proteins.tsv" AS line
@@ -1508,9 +1508,9 @@ IMPORT_DATASETS:
             CREATE INDEX IF NOT EXISTS FOR (s:Subject) ON (s.external_id);
             CREATE INDEX IF NOT EXISTS FOR (b:Biological_sample) ON (b.external_id);
             CREATE INDEX IF NOT EXISTS FOR (c:Clinical_variable) ON (c.id);
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAD_INTERVENTION]->() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CLINICAL_STATE]->() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_CLINICAL]->() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAD_INTERVENTION]->();
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CLINICAL_STATE]->();
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_CLINICAL]->();
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subject_had_intervention.tsv" AS line
@@ -1555,10 +1555,10 @@ IMPORT_DATASETS:
             CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
             CREATE INDEX IF NOT EXISTS FOR (c:Chromosome) ON (c.id);
             CREATE INDEX IF NOT EXISTS FOR (a:Analytical_sample) ON (a.id);
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A_KNOWN_VARIANT]->() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]->() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]->() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:CONTAINS_MUTATION]->() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A_KNOWN_VARIANT]->();
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]->();
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]->();
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:CONTAINS_MUTATION]->();
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation.tsv" AS line
@@ -1654,10 +1654,10 @@ CREATE_PROJECT: &create_project
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.name);
         CREATE INDEX IF NOT EXISTS FOR (c:Clinical_variable) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.name);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_DISEASE]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_INTERVENTION]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOLLOWS_UP_PROJECT]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TISSUE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_DISEASE]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_INTERVENTION]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOLLOWS_UP_PROJECT]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TISSUE]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_info.tsv" AS line
@@ -1727,7 +1727,7 @@ CREATE_RESPONSIBLE_USER: &create_responsible
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (u:User) ON (u.name);
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_RESPONSIBLE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_RESPONSIBLE]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_responsibles.tsv" AS line
@@ -1745,7 +1745,7 @@ CREATE_PARTICIPANT_USER: &create_participant
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (u:User) ON (u.name);
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:PARTICIPATES_IN]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:PARTICIPATES_IN]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_participants.tsv" AS line
@@ -1765,9 +1765,9 @@ CREATE_SUBJECTS: &create_subject
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (e:Experimental_factor) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_ENROLLED]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_DISEASE]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_ENROLLED]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_DISEASE]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subjects.tsv" AS line
@@ -1815,8 +1815,8 @@ CREATE_BIOSAMPLES: &create_bio
         CREATE CONSTRAINT IF NOT EXISTS FOR (s:Biological_sample) REQUIRE s.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (s:Subject) ON (s.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_SUBJECT]->() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:FROM_TISSUE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_SUBJECT]->();
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:FROM_TISSUE]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biological_samples.tsv" AS line
@@ -1870,7 +1870,7 @@ CREATE_ANALYTICALSAMPLES: &create_ana
         CREATE CONSTRAINT IF NOT EXISTS FOR (a:Analytical_sample) REQUIRE a.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_sample) ON (b.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:SPLITTED_INTO]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:SPLITTED_INTO]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_analytical_samples.tsv" AS line
@@ -1925,7 +1925,7 @@ CREATE_TIMEPOINT: &create_timepoint
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (t:Timepoint) REQUIRE t.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_sample) ON (b.external_id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:SAMPLED_AT_TIMEPOINT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:SAMPLED_AT_TIMEPOINT]->();
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_timepoint.tsv" AS line
