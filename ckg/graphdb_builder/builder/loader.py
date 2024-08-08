@@ -55,6 +55,7 @@ def load_into_database(driver, queries, requester):
                 if matches:
                     file_path = matches.group(1)
                     if os.path.isfile(unquote(file_path)):
+                        print(query + ";")
                         result = connector.commitQuery(driver, query+";")
                         record = result.single()
                         if record is not None and 'c' in record:
