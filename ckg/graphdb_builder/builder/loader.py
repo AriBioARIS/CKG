@@ -36,49 +36,73 @@ try:
 except Exception as err:
     logger.error("Reading configuration > {}.".format(err))
 
+def split_cypher_statements(query):
+    # Remove any leading non-Cypher text (e.g., comments, metadata)
+    query = re.sub(r'^[^A-Z]+', '', query, flags=re.MULTILINE)
+    
+    statements = []
+    current_statement = []
+    in_quotes = False
+    for line in query.split('\n'):
+        line = line.strip()
+        if not line or line.startswith('//'):  # Skip empty lines and comments
+            continue
+        if in_quotes:
+            current_statement.append(line)
+            if line.endswith("'") or line.endswith('"'):
+                in_quotes = False
+        elif line.startswith("'") or line.startswith('"'):
+            current_statement.append(line)
+            in_quotes = True
+        elif line.endswith(';'):
+            current_statement.append(line)
+            statements.append(' '.join(current_statement))
+            current_statement = []
+        else:
+            current_statement.append(line)
+    
+    if current_statement:
+        statements.append(' '.join(current_statement))
+    
+    return [s.strip() for s in statements if s.strip() and s.strip().upper().startswith(('CREATE', 'MERGE', 'MATCH', 'CALL', 'LOAD'))]
 
 def load_into_database(driver, queries, requester):
-    """
-    This function runs the queries provided in the graph database using a neo4j driver.
-
-    :param driver: neo4j driver, which provides the connection to the neo4j graph database.
-    :type driver: neo4j driver
-    :param list[dict] queries: list of queries to be passed to the database.
-    :param str requester: identifier of the query.
-    """
     regex = r"file:\/\/\/(.+\.tsv)"
     result = None
     for query in queries:
         try:
             statements = split_cypher_statements(query)
             for statement in statements:
-                if "file" in statement:
-                    matches = re.search(regex, statement)
-                    if matches:
-                        file_path = matches.group(1)
-                        if os.path.isfile(unquote(file_path)):
-                            result = connector.commitQuery(driver, statement)
-                            record = result.single()
-                            if record is not None and 'c' in record:
-                                counts = record['c']
-                                if counts == 0:
-                                    logger.warning("{} - No data was inserted in query: {}.\n results: {}".format(requester, statement, counts))
+                if statement:  # Only process non-empty statements
+                    if "file" in statement:
+                        matches = re.search(regex, statement)
+                        if matches:
+                            file_path = matches.group(1)
+                            if os.path.isfile(unquote(file_path)):
+                                result = connector.commitQuery(driver, statement)
+                                record = result.single()
+                                if record is not None and 'c' in record:
+                                    counts = record['c']
+                                    if counts == 0:
+                                        logger.warning("{} - No data was inserted in query: {}.\n results: {}".format(requester, statement, counts))
+                                    else:
+                                        logger.info("{} - Query: {}.\n results: {}".format(requester, statement, counts))
                                 else:
-                                    logger.info("{} - Query: {}.\n results: {}".format(requester, statement, counts))
+                                    logger.info("{} - cypher query: {}".format(requester, statement))
                             else:
-                                logger.info("{} - cypher query: {}".format(requester, statement))
+                                logger.error("Error loading: File does not exist. Query: {}".format(statement))
                         else:
-                            logger.error("Error loading: File does not exist. Query: {}".format(statement))
+                            logger.error("Error loading: File path not found in query: {}".format(statement))
                     else:
-                        logger.error("Error loading: File path not found in query: {}".format(statement))
-                else:
-                    result = connector.commitQuery(driver, statement)
+                        result = connector.commitQuery(driver, statement)
+                        logger.info("{} - cypher query executed: {}".format(requester, statement))
         except Exception as err:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Loading: {}, file: {}, line: {} - query: {}".format(err, fname, exc_tb.tb_lineno, query))
+            logger.error("Loading: {}, file: {}, line: {} - query: {}".format(err, fname, exc_tb.tb_lineno, statement))
 
     return result
+
 
 """
             if "file" in query:
@@ -331,37 +355,6 @@ def updateDB(driver, imports=None, specific=[]):
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             logger.error("Loading: {}: {}, file: {}, line: {}".format(i, err, fname, exc_tb.tb_lineno))
-
-def split_cypher_statements(query):
-    # Remove any leading non-Cypher text (e.g., comments, metadata)
-    query = re.sub(r'^[^A-Z]+', '', query, flags=re.MULTILINE)
-    
-    statements = []
-    current_statement = []
-    in_quotes = False
-    for line in query.split('\n'):
-        line = line.strip()
-        if not line or line.startswith('//'):  # Skip empty lines and comments
-            continue
-        if in_quotes:
-            current_statement.append(line)
-            if line.endswith("'") or line.endswith('"'):
-                in_quotes = False
-        elif line.startswith("'") or line.startswith('"'):
-            current_statement.append(line)
-            in_quotes = True
-        elif line.endswith(';'):
-            current_statement.append(line)
-            statements.append(' '.join(current_statement))
-            current_statement = []
-        else:
-            current_statement.append(line)
-    
-    if current_statement:
-        statements.append(' '.join(current_statement))
-    
-    return [s.strip() for s in statements if s.strip()]
-
 
 def fullUpdate():
     """
