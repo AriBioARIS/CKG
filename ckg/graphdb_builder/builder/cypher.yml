@@ -2,9 +2,9 @@ COUNT_RELATIONSHIPS:
     'name': "count_relationships"
     'description': "Counts the number of relationships of a given type"
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR ()-[r]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY1);
-        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY2);
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:RELATIONSHIP]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY1) ON (n.id);
+        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY2) ON (n.id);
         MATCH (:ENTITY1)-[:RELATIONSHIP]->(:ENTITY2)
         RETURN count(*) AS count;
 
@@ -12,26 +12,28 @@ REMOVE_RELATIONSHIPS:
     'name': "remove_relationship"
     'description': "Removes the specified relationship type between the specified entity types"
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR ()-[r]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY1);
-        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY2);
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:RELATIONSHIP]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY1) ON (n.id);
+        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY2) ON (n.id);
         CALL {
             MATCH (:ENTITY1)-[r:RELATIONSHIP]->(:ENTITY2)
             DELETE r
             RETURN count(r) AS deleted_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN deleted_count;
 
 REMOVE_NODE:
     'name': "remove_node"
     'description': "Removes all the instances of the specified type of node"
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR (n);
+        CREATE INDEX IF NOT EXISTS FOR (n:ENTITY) ON (n.id);
         CALL apoc.periodic.iterate(
             "MATCH (n:ENTITY) RETURN n",
             "DETACH DELETE n",
             {batchSize:1000}
         ) YIELD batches, total
         RETURN batches, total;
+
 
 IMPORT_ONTOLOGY_DATA:
     'name': "import ontology data"
@@ -40,7 +42,6 @@ IMPORT_ONTOLOGY_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (e:ENTITY) REQUIRE e.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.name);
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.type);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r]-() ON (type(r));
         CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_PARENT]-() ON (type(r));
         
         CALL {
@@ -54,7 +55,8 @@ IMPORT_ONTOLOGY_DATA:
                                             THEN split(line.synonyms, ',') 
                                             ELSE [] END
             RETURN COUNT(e) AS entity_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN entity_count;
         
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_has_parent.tsv" AS line
@@ -63,14 +65,13 @@ IMPORT_ONTOLOGY_DATA:
             MATCH (e2:ENTITY {id: line.END_ID})
             MERGE (e1)-[r:HAS_PARENT]->(e2)
             RETURN COUNT(r) AS relationship_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN relationship_count;
 
 IMPORT_ONTOLOGY_MAPPING_DATA:
     'name': "import ontology mappings"
     'description': "Creates relationships between different ontologies (i.e (EFO)-[:MAPS_TO]->(Disease)"
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR ()-[r]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR (n);
         CREATE INDEX IF NOT EXISTS FOR ()-[r:MAPS_TO]-() ON (type(r));
         
         CALL {
@@ -80,7 +81,8 @@ IMPORT_ONTOLOGY_MAPPING_DATA:
             MATCH (e2 {id: line.END_ID})
             MERGE (e1)-[r:MAPS_TO]->(e2)
             RETURN COUNT(r) AS mapping_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN mapping_count;
 
 IMPORT_PROTEIN_DATA:
     'name': "import protein data"
@@ -93,9 +95,9 @@ IMPORT_PROTEIN_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Peptide) REQUIRE p.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Transcript) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SEQUENCE]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_PROTEIN]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSLATED_INTO]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SEQUENCE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_PROTEIN]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSLATED_INTO]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein.tsv" AS line
@@ -109,7 +111,8 @@ IMPORT_PROTEIN_DATA:
                                             THEN split(line.synonyms, ',') 
                                             ELSE [] END
             RETURN COUNT(p) AS protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Amino_acid_sequence.tsv" AS line
@@ -120,7 +123,8 @@ IMPORT_PROTEIN_DATA:
                           aa.size = line.size,
                           aa.source = line.source
             RETURN COUNT(aa) AS aa_sequence_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN aa_sequence_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_HAS_Sequence_Amino_acid_sequence.tsv" AS line
@@ -129,7 +133,8 @@ IMPORT_PROTEIN_DATA:
             MATCH (aa:Amino_acid_sequence {id: line.END_ID})
             MERGE (p)-[r:HAS_SEQUENCE {source: line.source}]->(aa)
             RETURN COUNT(r) AS has_sequence_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN has_sequence_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Peptide.tsv" AS line
@@ -138,7 +143,8 @@ IMPORT_PROTEIN_DATA:
             ON CREATE SET p.type = line.type,
                           p.unique = line.unique
             RETURN COUNT(p) AS peptide_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN peptide_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Peptide_belongs_to_protein.tsv" AS line
@@ -147,7 +153,8 @@ IMPORT_PROTEIN_DATA:
             MATCH (p2:Protein {id: line.END_ID})
             MERGE (p1)-[r:BELONGS_TO_PROTEIN {source: line.source}]->(p2)
             RETURN COUNT(r) AS belongs_to_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN belongs_to_protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_gene_translated_into.tsv" AS line
@@ -156,7 +163,8 @@ IMPORT_PROTEIN_DATA:
             MATCH (p:Protein {id: line.END_ID})
             MERGE (g)-[r:TRANSLATED_INTO]->(p)
             RETURN COUNT(r) AS gene_translated_into_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN gene_translated_into_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_transcript_translated_into.tsv" AS line
@@ -165,7 +173,8 @@ IMPORT_PROTEIN_DATA:
             MATCH (p:Protein {id: line.END_ID})
             MERGE (t)-[r:TRANSLATED_INTO]->(p)
             RETURN COUNT(r) AS transcript_translated_into_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN transcript_translated_into_count;
 
 IMPORT_FUNCTIONAL_REGIONS:
     'name': 'import functional regions data'
@@ -174,7 +183,7 @@ IMPORT_FUNCTIONAL_REGIONS:
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Functional_region) REQUIRE f.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOUND_IN_PROTEIN]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOUND_IN_PROTEIN]->() ON (type(r));
         CREATE INDEX IF NOT EXISTS FOR ()-[r:MENTIONED_IN_PUBLICATION]-() ON (type(r));
 
         CALL {
@@ -185,7 +194,8 @@ IMPORT_FUNCTIONAL_REGIONS:
                           f.description = line.description,
                           f.source = line.source
             RETURN COUNT(f) AS functional_region_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN functional_region_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Functional_region_found_in_protein.tsv" AS line
@@ -199,7 +209,8 @@ IMPORT_FUNCTIONAL_REGIONS:
                 source: line.source
             }]->(p)
             RETURN COUNT(r) AS found_in_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN found_in_protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Functional_region_mentioned_in_publication.tsv" AS line
@@ -208,7 +219,9 @@ IMPORT_FUNCTIONAL_REGIONS:
             MATCH (p:Publication {id: line.END_ID})
             MERGE (f)-[r:MENTIONED_IN_PUBLICATION {source: line.source}]-(p)
             RETURN COUNT(r) AS mentioned_in_publication_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN mentioned_in_publication_count;
+
 
 IMPORT_MODIFIED_PROTEINS:
     'name': 'import modified proteins'
@@ -218,9 +231,9 @@ IMPORT_MODIFIED_PROTEINS:
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Peptide) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBSTRATE_OF]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBSTRATE_OF]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Modified_protein.tsv" AS line
@@ -232,7 +245,8 @@ IMPORT_MODIFIED_PROTEINS:
                           m.sequence_window = line.sequence_window,
                           m.source = line.source
             RETURN COUNT(m) AS modified_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN modified_protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_modified_protein_has_modification.tsv" AS line
@@ -241,7 +255,8 @@ IMPORT_MODIFIED_PROTEINS:
             MATCH (m:Modification {id: line.END_ID})
             MERGE (mp)-[r:HAS_MODIFICATION {source: line.source}]->(m)
             RETURN COUNT(r) AS has_modification_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN has_modification_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_has_modified_site.tsv" AS line
@@ -250,7 +265,8 @@ IMPORT_MODIFIED_PROTEINS:
             MATCH (mp:Modified_protein {id: line.END_ID})
             MERGE (p)-[r:HAS_MODIFIED_SITE]->(mp)
             RETURN COUNT(r) AS protein_has_modified_site_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN protein_has_modified_site_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_peptide_has_modified_site.tsv" AS line
@@ -259,7 +275,8 @@ IMPORT_MODIFIED_PROTEINS:
             MATCH (mp:Modified_protein {id: line.END_ID})
             MERGE (p)-[r:HAS_MODIFIED_SITE]->(mp)
             RETURN COUNT(r) AS peptide_has_modified_site_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN peptide_has_modified_site_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_substrate_is_substrate_of.tsv" AS line
@@ -273,7 +290,8 @@ IMPORT_MODIFIED_PROTEINS:
                 evidence_type: line.evidence_type
             }]->(p)
             RETURN COUNT(r) AS is_substrate_of_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN is_substrate_of_count;
 
 IMPORT_PROTEIN_ANNOTATIONS:
     'name': 'import protein annotations'
@@ -283,7 +301,7 @@ IMPORT_PROTEIN_ANNOTATIONS:
         CREATE INDEX IF NOT EXISTS FOR (c:Cellular_component) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (f:Molecular_function) ON (f.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Cellular_component_associated_with.tsv" AS line
@@ -296,7 +314,8 @@ IMPORT_PROTEIN_ANNOTATIONS:
                 evidence_type: line.evidence_type
             }]->(c)
             RETURN COUNT(r) AS cellular_component_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN cellular_component_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Molecular_function_associated_with.tsv" AS line
@@ -309,7 +328,8 @@ IMPORT_PROTEIN_ANNOTATIONS:
                 evidence_type: line.evidence_type
             }]->(f)
             RETURN COUNT(r) AS molecular_function_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN molecular_function_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Biological_process_associated_with.tsv" AS line
@@ -322,7 +342,8 @@ IMPORT_PROTEIN_ANNOTATIONS:
                 evidence_type: line.evidence_type
             }]->(b)
             RETURN COUNT(r) AS biological_process_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN biological_process_count;
 
 
 IMPORT_PATHOLOGY_EXPRESSION:
@@ -331,7 +352,7 @@ IMPORT_PATHOLOGY_EXPRESSION:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:DETECTED_IN_PATHOLOGY_SAMPLE]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:DETECTED_IN_PATHOLOGY_SAMPLE]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_detected_in_pathology_sample.tsv" AS line
@@ -349,7 +370,8 @@ IMPORT_PATHOLOGY_EXPRESSION:
                 source: line.source
             }]->(d)
             RETURN COUNT(r) AS detected_in_pathology_sample_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN detected_in_pathology_sample_count;
 
 IMPORT_COMPLEXES:
     'name': 'import protein complexes'
@@ -359,8 +381,8 @@ IMPORT_COMPLEXES:
         CREATE CONSTRAINT IF NOT EXISTS FOR (c:Complex) REQUIRE c.name IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBUNIT_OF]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_SUBUNIT_OF]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Complex.tsv" AS line
@@ -373,7 +395,8 @@ IMPORT_COMPLEXES:
                                             THEN split(line.synonyms, ',') 
                                             ELSE [] END
             RETURN COUNT(c) AS complex_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN complex_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_is_subunit_of.tsv" AS line
@@ -391,7 +414,8 @@ IMPORT_COMPLEXES:
                 source: line.source
             }]->(c)
             RETURN COUNT(r) AS is_subunit_of_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN is_subunit_of_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_biological_process_associated_with.tsv" AS line
@@ -404,7 +428,8 @@ IMPORT_COMPLEXES:
                 source: line.source
             }]->(b)
             RETURN COUNT(r) AS complex_associated_with_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN complex_associated_with_count;
 
 IMPORT_MODIFIED_PROTEIN_ANNOTATIONS:
     'name': 'import modified protein annotations'
@@ -413,7 +438,7 @@ IMPORT_MODIFIED_PROTEIN_ANNOTATIONS:
         CREATE INDEX IF NOT EXISTS FOR (m:Modified_protein) ON (m.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_disease_associated_with.tsv" AS line
@@ -427,7 +452,8 @@ IMPORT_MODIFIED_PROTEIN_ANNOTATIONS:
                 publications: line.publications
             }]->(d)
             RETURN COUNT(r) AS disease_associated_with_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN disease_associated_with_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_biological_process_associated_with.tsv" AS line
@@ -442,7 +468,8 @@ IMPORT_MODIFIED_PROTEIN_ANNOTATIONS:
                 action: line.action
             }]->(b)
             RETURN COUNT(r) AS biological_process_associated_with_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN biological_process_associated_with_count;
 
 
 IMPORT_PROTEIN_STRUCTURES:
@@ -451,7 +478,7 @@ IMPORT_PROTEIN_STRUCTURES:
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Protein_structure) REQUIRE p.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_STRUCTURE]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_STRUCTURE]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_structures.tsv" AS line
@@ -460,7 +487,8 @@ IMPORT_PROTEIN_STRUCTURES:
             ON CREATE SET s.source = line.source,
                           s.link = line.link
             RETURN COUNT(s) AS protein_structure_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN protein_structure_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_has_structure.tsv" AS line
@@ -469,7 +497,8 @@ IMPORT_PROTEIN_STRUCTURES:
             MATCH (s:Protein_structure {id: line.END_ID})
             MERGE (p)-[r:HAS_STRUCTURE {source: line.source}]->(s)
             RETURN COUNT(r) AS has_structure_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN has_structure_count;
 
 IMPORT_GENE_DATA:
     'name': 'import gene data'
@@ -489,7 +518,8 @@ IMPORT_GENE_DATA:
                                             THEN split(line.synonyms, ',') 
                                             ELSE [] END
             RETURN COUNT(g) AS gene_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN gene_count;
 
 IMPORT_TRANSCRIPT_DATA:
     'name': 'import transcript data'
@@ -498,8 +528,8 @@ IMPORT_TRANSCRIPT_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (t:Transcript) REQUIRE t.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (c:Chromosome) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:LOCATED_IN]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSCRIBED_INTO]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:LOCATED_IN]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:TRANSCRIBED_INTO]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Transcript.tsv" AS line
@@ -510,7 +540,8 @@ IMPORT_TRANSCRIPT_DATA:
                           t.taxid = line.taxid,
                           t.assembly = line.assembly
             RETURN COUNT(t) AS transcript_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN transcript_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/refseq_located_in.tsv" AS line
@@ -523,7 +554,8 @@ IMPORT_TRANSCRIPT_DATA:
                 strand: line.strand
             }]->(c)
             RETURN COUNT(r) AS located_in_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN located_in_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/refseq_transcribed_into.tsv" AS line
@@ -532,8 +564,8 @@ IMPORT_TRANSCRIPT_DATA:
             MATCH (t:Transcript {id: line.END_ID})
             MERGE (g)-[r:TRANSCRIBED_INTO]->(t)
             RETURN COUNT(r) AS transcribed_into_count
-        } IN TRANSACTIONS OF 10000 ROWS;
-
+        }
+        RETURN transcribed_into_count;
 
 IMPORT_CHROMOSOME_DATA:
     'name': 'import chromosome data'
@@ -548,14 +580,15 @@ IMPORT_CHROMOSOME_DATA:
             ON CREATE SET c.name = line.name,
                           c.taxid = line.taxid
             RETURN COUNT(c) AS chromosome_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN chromosome_count;
 
 IMPORT_CURATED_PPI_DATA:
     'name': 'import curated Protein-Protein interaction data'
     'description': 'Loads into the database all the PPI from curated sources i.e. Intact database'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_INTERACTS_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_INTERACTS_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with.tsv" AS line
@@ -576,14 +609,15 @@ IMPORT_CURATED_PPI_DATA:
                                ELSE [] END
             }]->(p2)
             RETURN COUNT(r) AS curated_ppi_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN curated_ppi_count;
 
 IMPORT_COMPILED_PPI_DATA:
     'name': 'import compiled Protein-Protein interaction data'
     'description': 'Loads into the database all the PPI from sources that compile/aggregate evidence from different resources i.e. STRING database'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_INTERACTS_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_INTERACTS_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with.tsv" AS line
@@ -604,7 +638,8 @@ IMPORT_COMPILED_PPI_DATA:
                                ELSE [] END
             }]->(p2)
             RETURN COUNT(r) AS compiled_ppi_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN compiled_ppi_count;
 
 IMPORT_JENSENLAB_DATA:
     'name': 'import jensenlab data'
@@ -612,7 +647,7 @@ IMPORT_JENSENLAB_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY1) ON (e.id);
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY2) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY1_ENTITY2_associated_with_integrated.tsv" AS line
@@ -625,7 +660,8 @@ IMPORT_JENSENLAB_DATA:
                 evidence_type: line.evidence_type
             }]->(d)
             RETURN COUNT(r) AS jensenlab_association_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN jensenlab_association_count;
 
 CREATE_PUBLICATIONS:
     'name': 'create Publication node'
@@ -648,8 +684,8 @@ CREATE_PUBLICATIONS:
                           p.page = line.page,
                           p.DOI = line.doi
             RETURN COUNT(p) AS publication_count
-        } IN TRANSACTIONS OF 10000 ROWS;
-
+        }
+        RETURN publication_count;
 
 IMPORT_MENTIONS:
     'name': 'import co-mentioned terms'
@@ -657,7 +693,7 @@ IMPORT_MENTIONS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:MENTIONED_IN_PUBLICATION]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:MENTIONED_IN_PUBLICATION]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_Publication_mentioned_in_publication.tsv" AS line
@@ -666,7 +702,8 @@ IMPORT_MENTIONS:
             MATCH (e:ENTITY {id: line.END_ID})
             MERGE (e)-[r:MENTIONED_IN_PUBLICATION]->(p)
             RETURN COUNT(r) AS mentioned_in_publication_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN mentioned_in_publication_count;
 
 IMPORT_PUBLISHED_IN:
     'name': 'import published studies'
@@ -674,7 +711,7 @@ IMPORT_PUBLISHED_IN:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:PUBLISHED_IN]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:PUBLISHED_IN]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_published_in_publication.tsv" AS line
@@ -683,7 +720,8 @@ IMPORT_PUBLISHED_IN:
             MATCH (p:Publication {id: line.END_ID})
             MERGE (g)-[r:PUBLISHED_IN]->(p)
             RETURN COUNT(r) AS published_in_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN published_in_count;
 
 IMPORT_VARIANT_FOUND_IN_GWAS:
     'name': 'import variants found in GWAS studies'
@@ -691,7 +729,7 @@ IMPORT_VARIANT_FOUND_IN_GWAS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (v:Known_variant) ON (v.external_id);
         CREATE INDEX IF NOT EXISTS FOR (g:GWAS_study) ON (g.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GWAS]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GWAS]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/GWAS_study_variant_found_in_gwas.tsv" AS line
@@ -708,7 +746,8 @@ IMPORT_VARIANT_FOUND_IN_GWAS:
                 source: line.source
             }]->(g)
             RETURN COUNT(r) AS variant_found_in_gwas_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN variant_found_in_gwas_count;
 
 IMPORT_GWAS_STUDIES_TRAIT:
     'name': 'import traits studied by GWAS'
@@ -716,7 +755,7 @@ IMPORT_GWAS_STUDIES_TRAIT:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (g:GWAS_study) ON (g.id);
         CREATE INDEX IF NOT EXISTS FOR (e:Experimental_factor) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TRAIT]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TRAIT]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/GWAS_study_studies_trait.tsv" AS line
@@ -725,7 +764,8 @@ IMPORT_GWAS_STUDIES_TRAIT:
             MATCH (e:Experimental_factor {id: line.END_ID})
             MERGE (g)-[r:STUDIES_TRAIT {source: line.source}]->(e)
             RETURN COUNT(r) AS studies_trait_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN studies_trait_count;
 
 IMPORT_DISEASE_DATA:
     'name': 'import Disease nodes'
@@ -733,7 +773,7 @@ IMPORT_DISEASE_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_RESOURCE_associated_with.tsv" AS line
@@ -746,7 +786,8 @@ IMPORT_DISEASE_DATA:
                 source: line.source
             }]->(d)
             RETURN COUNT(r) AS disease_association_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN disease_association_count;
 
 IMPORT_DRUG_DATA:
     'name': 'import drug data'
@@ -803,14 +844,15 @@ IMPORT_DRUG_DATA:
                 d.pKa = line.pKa,
                 d.Boiling_Point = line.Boiling_Point
             RETURN COUNT(d) AS drug_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN drug_count;
 
 IMPORT_DRUG_INTERACTION_DATA:
     'name': 'import drug-drug interactions'
     'description': 'Loads all the interactions between Drugs from different resources i.e. DrugBank'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:INTERACTS_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:INTERACTS_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with_drug.tsv" AS line
@@ -822,7 +864,8 @@ IMPORT_DRUG_INTERACTION_DATA:
                 interaction_type: line.interaction_type
             }]->(d2)
             RETURN COUNT(r) AS drug_interaction_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN drug_interaction_count;
 
 IMPORT_CURATED_DRUG_DATA:
     'name': 'import curated drug targets'
@@ -830,7 +873,7 @@ IMPORT_CURATED_DRUG_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_TARGETS]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_TARGETS]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_targets.tsv" AS line
@@ -846,7 +889,8 @@ IMPORT_CURATED_DRUG_DATA:
                 score: line.type
             }]->(g)
             RETURN COUNT(r) AS curated_drug_target_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN curated_drug_target_count;
 
 IMPORT_COMPILED_DRUG_DATA:
     'name': 'import compiled drug targets'
@@ -854,7 +898,7 @@ IMPORT_COMPILED_DRUG_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_TARGETS]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:COMPILED_TARGETS]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with.tsv" AS line
@@ -873,14 +917,15 @@ IMPORT_COMPILED_DRUG_DATA:
                                 ELSE [] END
             }]->(p)
             RETURN COUNT(r) AS compiled_drug_target_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN compiled_drug_target_count;
 
 IMPORT_PPI_ACTION:
     'name': 'import Protein-Protein interaction action data'
     'description': 'Loads all the PPI and the resulting activity of the interaction'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_acts_on_protein.tsv" AS line
@@ -894,7 +939,8 @@ IMPORT_PPI_ACTION:
                 directionality: toBoolean(line.directionality)
             }]->(p2)
             RETURN COUNT(r) AS ppi_action_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN ppi_action_count;
 
 IMPORT_DRUG_SIDE_EFFECTS:
     'name': 'import side effects'
@@ -902,8 +948,8 @@ IMPORT_DRUG_SIDE_EFFECTS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Phenotype) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SIDE_EFFECT]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_INDICATED_FOR]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_SIDE_EFFECT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_INDICATED_FOR]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_has_side_effect.tsv" AS line
@@ -915,7 +961,8 @@ IMPORT_DRUG_SIDE_EFFECTS:
                 r.original_side_effect_code = line.original_side_effect,
                 r.evidence_from = line.evidence_from
             RETURN COUNT(r) AS side_effect_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN side_effect_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_is_indicated_for.tsv" AS line
@@ -927,7 +974,8 @@ IMPORT_DRUG_SIDE_EFFECTS:
                 r.original_side_effect_code = line.original_side_effect,
                 r.evidence = line.evidence
             RETURN COUNT(r) AS indicated_for_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN indicated_for_count;
 
 IMPORT_DRUG_ACTS_ON:
     'name': 'import drug actions'
@@ -935,7 +983,7 @@ IMPORT_DRUG_ACTS_ON:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ACTS_ON]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_drug_acts_on_protein.tsv" AS line
@@ -949,7 +997,8 @@ IMPORT_DRUG_ACTS_ON:
                 directionality: toBoolean(line.directionality)
             }]->(p)
             RETURN COUNT(r) AS drug_acts_on_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN drug_acts_on_count;
 
 IMPORT_PATHWAY_DATA:
     'name': 'import pathway data'
@@ -959,7 +1008,7 @@ IMPORT_PATHWAY_DATA:
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ANNOTATED_IN_PATHWAY]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ANNOTATED_IN_PATHWAY]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Pathway.tsv" AS line
@@ -971,7 +1020,8 @@ IMPORT_PATHWAY_DATA:
                           p.linkout = line.linkout,
                           p.source = line.source
             RETURN COUNT(p) AS pathway_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN pathway_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_annotated_to_pathway.tsv" AS line
@@ -985,7 +1035,8 @@ IMPORT_PATHWAY_DATA:
                 source: line.source
             }]->(a)
             RETURN COUNT(r) AS protein_pathway_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN protein_pathway_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_metabolite_annotated_to_pathway.tsv" AS line
@@ -999,7 +1050,8 @@ IMPORT_PATHWAY_DATA:
                 source: line.source
             }]->(a)
             RETURN COUNT(r) AS metabolite_pathway_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN metabolite_pathway_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_drug_annotated_to_pathway.tsv" AS line
@@ -1013,7 +1065,8 @@ IMPORT_PATHWAY_DATA:
                 source: line.source
             }]->(a)
             RETURN COUNT(r) AS drug_pathway_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN drug_pathway_count;
 
 IMPORT_METABOLITE_DATA:
     'name': 'import metabolite data'
@@ -1023,7 +1076,7 @@ IMPORT_METABOLITE_DATA:
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Metabolite.tsv" AS line
@@ -1044,7 +1097,8 @@ IMPORT_METABOLITE_DATA:
                           m.pubchem_compound_id = line.pubchem_compound_id,
                           m.food_id = line.food_id
             RETURN COUNT(m) AS metabolite_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN metabolite_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with_protein.tsv" AS line
@@ -1053,7 +1107,8 @@ IMPORT_METABOLITE_DATA:
             MATCH (p:Protein {id: line.END_ID})
             MERGE (m)-[r:ASSOCIATED_WITH]->(p)
             RETURN COUNT(r) AS metabolite_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN metabolite_protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with_disease.tsv" AS line
@@ -1062,7 +1117,8 @@ IMPORT_METABOLITE_DATA:
             MATCH (d:Disease {id: line.END_ID})
             MERGE (m)-[r:ASSOCIATED_WITH]->(d)
             RETURN COUNT(r) AS metabolite_disease_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN metabolite_disease_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with_tissue.tsv" AS line
@@ -1071,7 +1127,8 @@ IMPORT_METABOLITE_DATA:
             MATCH (t:Tissue {id: line.END_ID})
             MERGE (m)-[r:ASSOCIATED_WITH]->(t)
             RETURN COUNT(r) AS metabolite_tissue_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN metabolite_tissue_count;
 
 IMPORT_FOOD_DATA:
     'name': 'import food data'
@@ -1079,7 +1136,7 @@ IMPORT_FOOD_DATA:
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Food) REQUIRE f.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CONTENT]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CONTENT]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Food.tsv" AS line
@@ -1092,7 +1149,8 @@ IMPORT_FOOD_DATA:
                           f.subgroup = line.subgroup,
                           f.source = line.source
             RETURN COUNT(f) AS food_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN food_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_food_has_content.tsv" AS line
@@ -1107,7 +1165,8 @@ IMPORT_FOOD_DATA:
                 source: line.source
             }]->(m)
             RETURN COUNT(r) AS food_content_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN food_content_count;
 
 IMPORT_BIOMARKERS:
     'name': 'import protein biomarkers'
@@ -1115,7 +1174,7 @@ IMPORT_BIOMARKERS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_BIOMARKER_OF_DISEASE]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_BIOMARKER_OF_DISEASE]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/protein_is_biomarker_of_disease.tsv" AS line
@@ -1136,7 +1195,8 @@ IMPORT_BIOMARKERS:
                 notes: line.notes
             }]->(d)
             RETURN COUNT(r) AS biomarker_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN biomarker_count;
 
 IMPORT_QCMARKERS:
     'name': 'import proteins used as quality marker in tissue'
@@ -1144,7 +1204,7 @@ IMPORT_QCMARKERS:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_QCMARKER_IN_TISSUE]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_QCMARKER_IN_TISSUE]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/protein_is_qcmarker_in_tissue.tsv" AS line
@@ -1153,7 +1213,8 @@ IMPORT_QCMARKERS:
             MATCH (t:Tissue {id: line.END_ID})
             MERGE (p)-[r:IS_QCMARKER_IN_TISSUE {class: line.class}]->(t)
             RETURN COUNT(r) AS qcmarker_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN qcmarker_count;
 
 IMPORT_KNOWN_VARIANT_DATA:
     'name': 'import known variant data'
@@ -1165,10 +1226,10 @@ IMPORT_KNOWN_VARIANT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (c:Chromosome) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_PROTEIN]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_AFFECTS_INTERACTION_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_PROTEIN]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:CURATED_AFFECTS_INTERACTION_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Known_variant.tsv" AS line
@@ -1183,7 +1244,8 @@ IMPORT_KNOWN_VARIANT_DATA:
                           k.original_source = line.original_source,
                           k.source = line.source
             RETURN COUNT(k) AS known_variant_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN known_variant_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Chromosome_known_variant_found_in_chromosome.tsv" AS line
@@ -1192,7 +1254,8 @@ IMPORT_KNOWN_VARIANT_DATA:
             MATCH (c:Chromosome {id: line.END_ID})
             MERGE (k)-[r:VARIANT_FOUND_IN_CHROMOSOME]->(c)
             RETURN COUNT(r) AS variant_in_chromosome_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN variant_in_chromosome_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Gene_known_variant_found_in_gene.tsv" AS line
@@ -1201,7 +1264,8 @@ IMPORT_KNOWN_VARIANT_DATA:
             MATCH (g:Gene {id: line.END_ID})
             MERGE (k)-[r:VARIANT_FOUND_IN_GENE]->(g)
             RETURN COUNT(r) AS variant_in_gene_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN variant_in_gene_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_known_variant_found_in_protein.tsv" AS line
@@ -1210,7 +1274,8 @@ IMPORT_KNOWN_VARIANT_DATA:
             MATCH (p:Protein {id: line.END_ID})
             MERGE (k)-[r:VARIANT_FOUND_IN_PROTEIN]->(p)
             RETURN COUNT(r) AS variant_in_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN variant_in_protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/mutation_curated_affects_interaction_with.tsv" AS line
@@ -1225,7 +1290,8 @@ IMPORT_KNOWN_VARIANT_DATA:
                 source: line.source
             }]->(p)
             RETURN COUNT(r) AS curated_affects_interaction_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN curated_affects_interaction_count;
 
 IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
     'name': 'import clinically relevant variants'
@@ -1235,9 +1301,9 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (k:Known_variant) ON (k.pvariant_id);
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_IS_CLINICALLY_RELEVANT]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:TARGETS_CLINICALLY_RELEVANT_VARIANT]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_IS_CLINICALLY_RELEVANT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:TARGETS_CLINICALLY_RELEVANT_VARIANT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:ASSOCIATED_WITH]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Clinically_relevant_variant.tsv" AS line
@@ -1252,7 +1318,8 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
                           k.oncogeneicity = line.oncogeneicity,
                           k.source = line.source
             RETURN COUNT(k) AS clinically_relevant_variant_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN clinically_relevant_variant_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_known_variant_is_clinically_relevant.tsv" AS line
@@ -1261,7 +1328,8 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
             MATCH (c:Clinically_relevant_variant {id: line.END_ID})
             MERGE (k)-[r:VARIANT_IS_CLINICALLY_RELEVANT {source: line.source}]->(c)
             RETURN COUNT(r) AS variant_is_clinically_relevant_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN variant_is_clinically_relevant_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_targets_clinically_relevant_variant.tsv" AS line
@@ -1275,7 +1343,8 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
                 source: line.source
             }]->(k)
             RETURN COUNT(r) AS targets_clinically_relevant_variant_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN targets_clinically_relevant_variant_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with.tsv" AS line
@@ -1289,7 +1358,8 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
                 number_publications: line.number_publications
             }]->(d)
             RETURN COUNT(r) AS associated_with_disease_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN associated_with_disease_count;
 
 IMPORT_GWAS:
     'name': 'import GWAS studies'
@@ -1307,7 +1377,8 @@ IMPORT_GWAS:
                           g.replication_size = line.replication_size,
                           g.trait = line.trait
             RETURN COUNT(g) AS gwas_study_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN gwas_study_count;
 
 proteomics_class: &proteomics_class
     'name': 'import proteomics dataset'
@@ -1317,11 +1388,11 @@ proteomics_class: &proteomics_class
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Peptide) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PROTEIN]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PEPTIDE]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_MODIFIED_PROTEIN]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PROTEIN]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_PEPTIDE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFICATION]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_MODIFIED_SITE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_MODIFIED_PROTEIN]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_proteins.tsv" AS line
@@ -1345,7 +1416,8 @@ proteomics_class: &proteomics_class
                 r.MS1Quantity = line.MS1Quantity,
                 r.MS2Quantity = line.MS2Quantity
             RETURN COUNT(r) AS quantified_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN quantified_protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subject_peptide.tsv" AS line
@@ -1358,7 +1430,8 @@ proteomics_class: &proteomics_class
                 proteinGroupId: line.Protein_group_IDs
             }]->(p)
             RETURN COUNT(r) AS quantified_peptide_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN quantified_peptide_count;
 
         CREATE CONSTRAINT IF NOT EXISTS FOR (m:Modified_protein) REQUIRE m.id IS UNIQUE;
 
@@ -1372,7 +1445,8 @@ proteomics_class: &proteomics_class
                           m.sequence_window = line.sequence_window,
                           m.source = line.source
             RETURN COUNT(m) AS modified_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN modified_protein_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_modification.tsv" AS line
@@ -1381,7 +1455,8 @@ proteomics_class: &proteomics_class
             MATCH (p:Modification {id: line.END_ID})
             MERGE (mp)-[r:HAS_MODIFICATION]->(p)
             RETURN COUNT(r) AS modification_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN modification_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_protein.tsv" AS line
@@ -1390,7 +1465,8 @@ proteomics_class: &proteomics_class
             MATCH (mp:Modified_protein {id: line.END_ID})
             MERGE (p)-[r:HAS_MODIFIED_SITE]->(mp)
             RETURN COUNT(r) AS protein_modified_site_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN protein_modified_site_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_peptide.tsv" AS line
@@ -1399,7 +1475,8 @@ proteomics_class: &proteomics_class
             MATCH (mp:Modified_protein {id: line.END_ID})
             MERGE (p)-[r:HAS_MODIFIED_SITE]->(mp)
             RETURN COUNT(r) AS peptide_modified_site_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN peptide_modified_site_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_subject.tsv" AS line
@@ -1416,7 +1493,8 @@ proteomics_class: &proteomics_class
                 is_razor: line.is_razor
             }]->(mp)
             RETURN COUNT(r) AS quantified_modified_protein_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN quantified_modified_protein_count;
 
 IMPORT_DATASETS:
     "proteomics": *proteomics_class
@@ -1430,9 +1508,9 @@ IMPORT_DATASETS:
             CREATE INDEX IF NOT EXISTS FOR (s:Subject) ON (s.external_id);
             CREATE INDEX IF NOT EXISTS FOR (b:Biological_sample) ON (b.external_id);
             CREATE INDEX IF NOT EXISTS FOR (c:Clinical_variable) ON (c.id);
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAD_INTERVENTION]-() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CLINICAL_STATE]-() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_CLINICAL]-() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAD_INTERVENTION]->() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_CLINICAL_STATE]->() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_QUANTIFIED_CLINICAL]->() ON (type(r));
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subject_had_intervention.tsv" AS line
@@ -1445,7 +1523,8 @@ IMPORT_DATASETS:
                     response: line.response
                 }]->(intervention)
                 RETURN COUNT(r) AS intervention_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN intervention_count;
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_clinical_state.tsv" AS line
@@ -1454,7 +1533,8 @@ IMPORT_DATASETS:
                 MATCH (c:Clinical_variable {id: line.END_ID})
                 MERGE (b)-[r:HAS_CLINICAL_STATE {value: line.value}]->(c)
                 RETURN COUNT(r) AS clinical_state_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN clinical_state_count;
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_clinical_quant.tsv" AS line
@@ -1463,7 +1543,8 @@ IMPORT_DATASETS:
                 MATCH (c:Clinical_variable {id: line.END_ID})
                 MERGE (b)-[r:HAS_QUANTIFIED_CLINICAL {value: toFloat(line.value)}]->(c)
                 RETURN COUNT(r) AS quantified_clinical_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN quantified_clinical_count;
 
     "wes":
         'name': 'import Whole-exome sequencing dataset'
@@ -1474,10 +1555,10 @@ IMPORT_DATASETS:
             CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
             CREATE INDEX IF NOT EXISTS FOR (c:Chromosome) ON (c.id);
             CREATE INDEX IF NOT EXISTS FOR (a:Analytical_sample) ON (a.id);
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A_KNOWN_VARIANT]-() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]-() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]-() ON (type(r));
-            CREATE INDEX IF NOT EXISTS FOR ()-[r:CONTAINS_MUTATION]-() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A_KNOWN_VARIANT]->() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_GENE]->() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:VARIANT_FOUND_IN_CHROMOSOME]->() ON (type(r));
+            CREATE INDEX IF NOT EXISTS FOR ()-[r:CONTAINS_MUTATION]->() ON (type(r));
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation.tsv" AS line
@@ -1494,7 +1575,8 @@ IMPORT_DATASETS:
                               s.biotype = line.biotype,
                               s.alternative_names = line.alternative_names
                 RETURN COUNT(s) AS somatic_mutation_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN somatic_mutation_count;
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_known_variant.tsv" AS line
@@ -1503,7 +1585,8 @@ IMPORT_DATASETS:
                 MATCH (k:Known_variant {id: line.END_ID})
                 MERGE (s)-[r:IS_A_KNOWN_VARIANT]->(k)
                 RETURN COUNT(r) AS known_variant_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN known_variant_count;
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_gene.tsv" AS line
@@ -1512,7 +1595,8 @@ IMPORT_DATASETS:
                 MATCH (g:Gene {id: line.END_ID})
                 MERGE (s)-[r:VARIANT_FOUND_IN_GENE]->(g)
                 RETURN COUNT(r) AS variant_in_gene_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN variant_in_gene_count;
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_chromosome.tsv" AS line
@@ -1521,7 +1605,8 @@ IMPORT_DATASETS:
                 MATCH (c:Chromosome {id: line.END_ID})
                 MERGE (s)-[r:VARIANT_FOUND_IN_CHROMOSOME]->(c)
                 RETURN COUNT(r) AS variant_in_chromosome_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN variant_in_chromosome_count;
 
             CALL {
                 LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_sample.tsv" AS line
@@ -1530,7 +1615,8 @@ IMPORT_DATASETS:
                 MATCH (s:Somatic_mutation {id: line.END_ID})
                 MERGE (a)-[r:CONTAINS_MUTATION]->(s)
                 RETURN COUNT(r) AS sample_mutation_count
-            } IN TRANSACTIONS OF 10000 ROWS;
+            }
+            RETURN sample_mutation_count;
 
 CREATE_USER_NODE:
     'name': ''
@@ -1556,7 +1642,8 @@ CREATE_USER_NODE:
                           u.rolename = line.rolename,
                           u.image = line.image
             RETURN COUNT(u) AS user_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN user_count;
 
 CREATE_PROJECT: &create_project
     'name': 'create project'
@@ -1567,10 +1654,10 @@ CREATE_PROJECT: &create_project
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.name);
         CREATE INDEX IF NOT EXISTS FOR (c:Clinical_variable) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.name);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_DISEASE]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_INTERVENTION]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOLLOWS_UP_PROJECT]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TISSUE]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_DISEASE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_INTERVENTION]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:FOLLOWS_UP_PROJECT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:STUDIES_TISSUE]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_info.tsv" AS line
@@ -1591,7 +1678,8 @@ CREATE_PROJECT: &create_project
                           p.end_date = line.end_date,
                           p.status = line.status
             RETURN COUNT(p) AS project_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN project_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_studies_disease.tsv" AS line
@@ -1600,7 +1688,8 @@ CREATE_PROJECT: &create_project
             MATCH (d:Disease {name: line.END_ID})
             MERGE (p)-[r:STUDIES_DISEASE]->(d)
             RETURN COUNT(r) AS studies_disease_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN studies_disease_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_studies_intervention.tsv" AS line
@@ -1609,7 +1698,8 @@ CREATE_PROJECT: &create_project
             MATCH (c:Clinical_variable {id: line.END_ID})
             MERGE (p)-[r:STUDIES_INTERVENTION]->(c)
             RETURN COUNT(r) AS studies_intervention_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN studies_intervention_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_follows_up_project.tsv" AS line
@@ -1618,7 +1708,8 @@ CREATE_PROJECT: &create_project
             MATCH (p2:Project {id: line.END_ID})
             MERGE (p1)-[r:FOLLOWS_UP_PROJECT]->(p2)
             RETURN COUNT(r) AS follows_up_project_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN follows_up_project_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_studies_tissue.tsv" AS line
@@ -1627,7 +1718,8 @@ CREATE_PROJECT: &create_project
             MATCH (t:Tissue {name: line.END_ID})
             MERGE (p)-[r:STUDIES_TISSUE]->(t)
             RETURN COUNT(r) AS studies_tissue_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN studies_tissue_count;
 
 CREATE_RESPONSIBLE_USER: &create_responsible
     'name': 'create responsible'
@@ -1635,7 +1727,7 @@ CREATE_RESPONSIBLE_USER: &create_responsible
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (u:User) ON (u.name);
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_RESPONSIBLE]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_RESPONSIBLE]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_responsibles.tsv" AS line
@@ -1644,7 +1736,8 @@ CREATE_RESPONSIBLE_USER: &create_responsible
             MATCH (p:Project {id: line.END_ID})
             MERGE (u)-[r:IS_RESPONSIBLE]->(p)
             RETURN COUNT(r) AS responsible_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN responsible_count;
 
 CREATE_PARTICIPANT_USER: &create_participant
     'name': 'create participant'
@@ -1652,7 +1745,7 @@ CREATE_PARTICIPANT_USER: &create_participant
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (u:User) ON (u.name);
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:PARTICIPATES_IN]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:PARTICIPATES_IN]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_participants.tsv" AS line
@@ -1661,7 +1754,8 @@ CREATE_PARTICIPANT_USER: &create_participant
             MATCH (p:Project {id: line.END_ID})
             MERGE (u)-[r:PARTICIPATES_IN]->(p)
             RETURN COUNT(r) AS participant_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN participant_count;
 
 CREATE_SUBJECTS: &create_subject
     'name': 'create subjects'
@@ -1671,9 +1765,9 @@ CREATE_SUBJECTS: &create_subject
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (e:Experimental_factor) ON (e.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_ENROLLED]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_DISEASE]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_ENROLLED]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:HAS_DISEASE]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:IS_A]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subjects.tsv" AS line
@@ -1681,7 +1775,8 @@ CREATE_SUBJECTS: &create_subject
             MERGE (s:Subject {id: line.ID})
             ON CREATE SET s.external_id = line.external_id
             RETURN COUNT(s) AS subject_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN subject_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_project.tsv" AS line
@@ -1690,7 +1785,8 @@ CREATE_SUBJECTS: &create_subject
             MATCH (s:Subject {id: line.END_ID})
             MERGE (p)-[r:HAS_ENROLLED]->(s)
             RETURN COUNT(r) AS enrolled_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN enrolled_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_disease.tsv" AS line
@@ -1699,7 +1795,8 @@ CREATE_SUBJECTS: &create_subject
             MATCH (d:Disease {id: line.END_ID})
             MERGE (s)-[r:HAS_DISEASE]->(d)
             RETURN COUNT(r) AS disease_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN disease_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_experimental_factor.tsv" AS line
@@ -1708,7 +1805,8 @@ CREATE_SUBJECTS: &create_subject
             MATCH (e:Experimental_factor {id: line.END_ID})
             MERGE (s)-[r:IS_A]->(e)
             RETURN COUNT(r) AS experimental_factor_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN experimental_factor_count;
 
 CREATE_BIOSAMPLES: &create_bio
     'name': 'create biological samples'
@@ -1717,8 +1815,8 @@ CREATE_BIOSAMPLES: &create_bio
         CREATE CONSTRAINT IF NOT EXISTS FOR (s:Biological_sample) REQUIRE s.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (s:Subject) ON (s.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_SUBJECT]-() ON (type(r));
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:FROM_TISSUE]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:BELONGS_TO_SUBJECT]->() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:FROM_TISSUE]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biological_samples.tsv" AS line
@@ -1726,7 +1824,8 @@ CREATE_BIOSAMPLES: &create_bio
             MERGE (s:Biological_sample {id: line.ID})
             ON CREATE SET s.external_id = line.external_id
             RETURN COUNT(s) AS biosample_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN biosample_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subject_biosample.tsv" AS line
@@ -1735,7 +1834,8 @@ CREATE_BIOSAMPLES: &create_bio
             MATCH (s:Subject {id: line.END_ID})
             MERGE (b)-[r:BELONGS_TO_SUBJECT]->(s)
             RETURN COUNT(r) AS biosample_subject_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN biosample_subject_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosamples_info.tsv" AS line
@@ -1749,7 +1849,8 @@ CREATE_BIOSAMPLES: &create_bio
                 s.storage = line.storage,
                 s.status = line.status
             RETURN COUNT(s) AS biosample_info_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN biosample_info_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosample_tissue.tsv" AS line
@@ -1758,8 +1859,8 @@ CREATE_BIOSAMPLES: &create_bio
             MATCH (t:Tissue {id: line.END_ID})
             MERGE (b)-[r:FROM_TISSUE]->(t)
             RETURN COUNT(r) AS biosample_tissue_count
-        } IN TRANSACTIONS OF 10000 ROWS;
-
+        }
+        RETURN biosample_tissue_count;
 
 CREATE_ANALYTICALSAMPLES: &create_ana
     'name': 'create analytical samples'
@@ -1769,7 +1870,7 @@ CREATE_ANALYTICALSAMPLES: &create_ana
         CREATE CONSTRAINT IF NOT EXISTS FOR (a:Analytical_sample) REQUIRE a.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_sample) ON (b.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:SPLITTED_INTO]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:SPLITTED_INTO]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_analytical_samples.tsv" AS line
@@ -1777,7 +1878,8 @@ CREATE_ANALYTICALSAMPLES: &create_ana
             MERGE (s:Analytical_sample {id: line.ID})
             ON CREATE SET s.external_id = line.external_id
             RETURN COUNT(s) AS analytical_sample_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN analytical_sample_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosample_analytical.tsv" AS line
@@ -1786,7 +1888,8 @@ CREATE_ANALYTICALSAMPLES: &create_ana
             MATCH (s2:Analytical_sample {id: line.END_ID})
             MERGE (s1)-[r:SPLITTED_INTO]->(s2)
             RETURN COUNT(r) AS split_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN split_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosample_analytical_attributes.tsv" AS line
@@ -1795,7 +1898,8 @@ CREATE_ANALYTICALSAMPLES: &create_ana
             SET r.quantity = line.quantity,
                 r.quantity_units = line.quantity_units
             RETURN COUNT(r) AS split_attribute_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN split_attribute_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_analytical_samples_info.tsv" AS line
@@ -1812,7 +1916,8 @@ CREATE_ANALYTICALSAMPLES: &create_ana
                 s.secondary_group = line.secondary_group,
                 s.batch = line.batch
             RETURN COUNT(s) AS analytical_sample_info_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN analytical_sample_info_count;
 
 CREATE_TIMEPOINT: &create_timepoint
     'name': 'create timepoint'
@@ -1820,7 +1925,7 @@ CREATE_TIMEPOINT: &create_timepoint
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (t:Timepoint) REQUIRE t.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_sample) ON (b.external_id);
-        CREATE INDEX IF NOT EXISTS FOR ()-[r:SAMPLED_AT_TIMEPOINT]-() ON (type(r));
+        CREATE INDEX IF NOT EXISTS FOR ()-[r:SAMPLED_AT_TIMEPOINT]->() ON (type(r));
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_timepoint.tsv" AS line
@@ -1828,7 +1933,8 @@ CREATE_TIMEPOINT: &create_timepoint
             MERGE (t:Timepoint {id: line.ID})
             ON CREATE SET t.units = line.units
             RETURN COUNT(t) AS timepoint_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN timepoint_count;
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biological_sample_at_timepoint.tsv" AS line
@@ -1840,7 +1946,8 @@ CREATE_TIMEPOINT: &create_timepoint
                 intervention: line.intervention
             }]->(t)
             RETURN COUNT(r) AS sample_at_timepoint_count
-        } IN TRANSACTIONS OF 10000 ROWS;
+        }
+        RETURN sample_at_timepoint_count;
 
 
 IMPORT_PROJECT:
