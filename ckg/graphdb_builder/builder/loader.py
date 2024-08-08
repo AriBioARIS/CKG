@@ -104,34 +104,6 @@ def load_into_database(driver, queries, requester):
     return result
 
 
-"""
-            if "file" in query:
-                matches = re.search(regex, query)
-                if matches:
-                    file_path = matches.group(1)
-                    if os.path.isfile(unquote(file_path)):
-                        result = connector.commitQuery(driver, query+";")
-                        record = result.single()
-                        if record is not None and 'c' in record:
-                            counts = record['c']
-                            if counts == 0:
-                                logger.warning("{} - No data was inserted in query: {}.\n results: {}".format(requester, query, counts))
-                            else:
-                                logger.info("{} - Query: {}.\n results: {}".format(requester, query, counts))
-                        else:
-                            logger.info("{} - cypher query: {}".format(requester, query))
-                    else:
-                        logger.error("Error loading: File does not exist. Query: {}".format(query))
-            else:
-                result = connector.commitQuery(driver, query+";")
-        except Exception as err:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Loading: {}, file: {}, line: {} - query: {}".format(err, fname, exc_tb.tb_lineno, query))
-
-    return result
-"""
-
 def updateDB(driver, imports=None, specific=[]):
     """
     Populates the graph database with information for each Database, Ontology or Experiment \
