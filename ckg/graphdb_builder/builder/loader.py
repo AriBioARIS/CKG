@@ -23,7 +23,7 @@ from datetime import datetime
 from ckg import ckg_utils
 from ckg.graphdb_connector import connector
 from ckg.graphdb_builder import builder_utils
-
+from neo4j.exceptions import ClientError
 
 START_TIME = datetime.now()
 
@@ -36,7 +36,6 @@ try:
 except Exception as err:
     logger.error("Reading configuration > {}.".format(err))
 
-
 def load_into_database(driver, queries, requester):
     """
     This function runs the queries provided in the graph database using a neo4j driver.
@@ -48,31 +47,34 @@ def load_into_database(driver, queries, requester):
     """
     regex = r"file:\/\/\/(.+\.tsv)"
     result = None
-    for query in queries:
-        try:
-            if "file" in query:
-                matches = re.search(regex, query)
-                if matches:
-                    file_path = matches.group(1)
-                    if os.path.isfile(unquote(file_path)):
-                        result = connector.commitQuery(driver, query+";")
-                        record = result.single()
-                        if record is not None and 'c' in record:
-                            counts = record['c']
-                            if counts == 0:
-                                logger.warning("{} - No data was inserted in query: {}.\n results: {}".format(requester, query, counts))
+
+    with driver.session(database="neo4j") as session:  # Explicitly select the database
+        for query in queries:
+            try:
+                if "file" in query:
+                    matches = re.search(regex, query)
+                    if matches:
+                        file_path = matches.group(1)
+                        if os.path.isfile(unquote(file_path)):
+                            result = session.execute_write(lambda tx: tx.run(query))
+                            summary = result.consume()
+                            affected_rows = summary.counters.nodes_created + summary.counters.relationships_created
+                            if affected_rows == 0:
+                                logger.warning(f"{requester} - No data was inserted in query: {query[:100]}...\nResults: {affected_rows}")
                             else:
-                                logger.info("{} - Query: {}.\n results: {}".format(requester, query, counts))
+                                logger.info(f"{requester} - Query: {query[:100]}...\nResults: {affected_rows}")
                         else:
-                            logger.info("{} - cypher query: {}".format(requester, query))
-                    else:
-                        logger.error("Error loading: File does not exist. Query: {}".format(query))
-            else:
-                result = connector.commitQuery(driver, query+";")
-        except Exception as err:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Loading: {}, file: {}, line: {} - query: {}".format(err, fname, exc_tb.tb_lineno, query))
+                            logger.error(f"Error loading: File does not exist. Query: {query[:100]}...")
+                else:
+                    result = session.execute_write(lambda tx: tx.run(query))
+                    summary = result.consume()
+                    logger.info(f"{requester} - Query executed: {query[:100]}...")
+            except ClientError as ce:
+                logger.error(f"Neo4j ClientError: {ce.message}. Query: {query[:100]}...")
+            except Exception as err:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                logger.error(f"Loading: {err}, file: {fname}, line: {exc_tb.tb_lineno} - query: {query[:100]}...", exc_info=True)
 
     return result
 
