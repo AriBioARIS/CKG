@@ -401,37 +401,32 @@ IMPORT_MODIFIED_PROTEIN_ANNOTATIONS:
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
 
-        CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_disease_associated_with.tsv" AS line
-            FIELDTERMINATOR '\t'
-            MATCH (m:Modified_protein {id: line.START_ID})
-            MATCH (d:Disease {id: line.END_ID})
-            MERGE (m)-[r:ASSOCIATED_WITH {
-                score: toFloat(line.score),
-                source: line.source,
-                evidence_type: line.evidence_type,
-                publications: line.publications
-            }]->(d)
-            RETURN COUNT(r) AS disease_associated_with_count
-        }
-        RETURN disease_associated_with_count;
+        LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_disease_associated_with.tsv" AS line
+        FIELDTERMINATOR '\t'
+        MATCH (m:Modified_protein {id: line.START_ID})
+        MATCH (d:Disease {id: line.END_ID})
+        MERGE (m)-[r:ASSOCIATED_WITH {
+            score: toFloat(line.score),
+            source: line.source,
+            evidence_type: line.evidence_type,
+            publications: line.publications
+        }]->(d)
+        WITH COUNT(r) AS disease_associated_with_count
 
-        CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_biological_process_associated_with.tsv" AS line
-            FIELDTERMINATOR '\t'
-            MATCH (m:Modified_protein {id: line.START_ID})
-            MATCH (b:Biological_process {id: line.END_ID})
-            MERGE (m)-[r:ASSOCIATED_WITH {
-                score: toFloat(line.score),
-                source: line.source,
-                evidence_type: line.evidence_type,
-                publications: line.publications,
-                action: line.action
-            }]->(b)
-            RETURN COUNT(r) AS biological_process_associated_with_count
-        }
-        RETURN biological_process_associated_with_count;
+        LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_biological_process_associated_with.tsv" AS line
+        FIELDTERMINATOR '\t'
+        MATCH (m:Modified_protein {id: line.START_ID})
+        MATCH (b:Biological_process {id: line.END_ID})
+        MERGE (m)-[r:ASSOCIATED_WITH {
+            score: toFloat(line.score),
+            source: line.source,
+            evidence_type: line.evidence_type,
+            publications: line.publications,
+            action: line.action
+        }]->(b)
+        WITH disease_associated_with_count, COUNT(r) AS biological_process_associated_with_count
 
+        RETURN disease_associated_with_count, biological_process_associated_with_count;
 
 IMPORT_PROTEIN_STRUCTURES:
     'name': 'import protein structure data'
