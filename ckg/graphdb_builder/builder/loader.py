@@ -295,7 +295,10 @@ def updateDB(driver, imports=None, specific=[]):
                 print('Done Loading experiment')
             else:
                 logger.error("Non-existing dataset. The dataset you are trying to load does not exist: {}.".format(i))
+            for query in queries:
+                print(query)
             load_into_database(driver, queries, i)
+            print('Done Loading {} into the database'.format(i))
         except Exception as err:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
