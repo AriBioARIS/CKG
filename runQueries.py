@@ -14,74 +14,82 @@ async def import_ontologies():
     """Import the ontologies into the Neo4j database."""
     driver = await get_driver()
     async with driver.session() as session:
-        async with session.begin_transaction() as tx:
-            for entity in [
-                "Disease", "Tissue", "Clinical_variable", "Phenotype",
-                "Modification", "Molecular_interaction", "Biological_process",
-                "Molecular_function", "Cellular_component", "Experimental_factor",
-            ]:
-                try:
-                    constraint_query = f"""
-                    CREATE CONSTRAINT IF NOT EXISTS FOR (n:{entity}) REQUIRE n.id IS UNIQUE
-                    """
-                    await tx.run(constraint_query)
-                    logging.info(f"Created constraint for {entity}")
-                except Exception as e:
-                    logging.error(f"Error creating constraint for {entity}: {e}")
-
-                for index_type in ['name', 'id', 'type']:
+        try:
+            async with session.begin_transaction() as tx:
+                for entity in [
+                    "Disease", "Tissue", "Clinical_variable", "Phenotype",
+                    "Modification", "Molecular_interaction", "Biological_process",
+                    "Molecular_function", "Cellular_component", "Experimental_factor",
+                ]:
                     try:
-                        index_query = f"""
-                        CREATE INDEX IF NOT EXISTS FOR (n:{entity}) ON (n.{index_type})
+                        constraint_query = f"""
+                        CREATE CONSTRAINT IF NOT EXISTS FOR (n:{entity}) REQUIRE n.id IS UNIQUE
                         """
-                        await tx.run(index_query)
-                        logging.info(f"Created index for {entity} {index_type}")
+                        await tx.run(constraint_query)
+                        logging.info(f"Created constraint for {entity}")
                     except Exception as e:
-                        logging.error(f"Error creating index for {entity} {index_type}: {e}")
+                        logging.error(f"Error creating constraint for {entity}: {e}")
 
-                try:
-                    load_entity_query = f'''
-                    CALL {{
-                        LOAD CSV WITH HEADERS FROM "file:///{entity}.tsv" as line
-                        FIELDTERMINATOR "\\t"
-                        MERGE (n:{entity}:ENTITY {{id: line.id}})
-                        ON CREATE SET n.name = line.name,
-                                        n.description = line.description,
-                                        n.type = line.type,
-                                        n.synonyms = CASE WHEN line.synonyms IS NOT NULL AND line.synonyms <> ''
-                                            THEN split(line.synonyms, ",")
-                                            ELSE [] END
-                        RETURN COUNT(n) as entity_count
-                    }}
-                    RETURN entity_count
-                    '''
-                    result = await tx.run(load_entity_query)
-                    records = await result.fetch()
-                    if records:
-                        logging.info(f"Loaded {records[0]['entity_count']} {entity} entities")
-                except Exception as e:
-                    logging.error(f"Error loading {entity} entities: {e}")
+                    for index_type in ['name', 'id', 'type']:
+                        try:
+                            index_query = f"""
+                            CREATE INDEX IF NOT EXISTS FOR (n:{entity}) ON (n.{index_type})
+                            """
+                            await tx.run(index_query)
+                            logging.info(f"Created index for {entity} {index_type}")
+                        except Exception as e:
+                            logging.error(f"Error creating index for {entity} {index_type}: {e}")
 
-                try:
-                    load_has_parent_query = f'''
-                    CALL {{
-                        LOAD CSV WITH HEADERS FROM "file:///{entity}_has_parent.tsv" as line
-                        FIELDTERMINATOR "\\t"
-                        MATCH (n1:{entity} {{id: line.START_ID}})
-                        MATCH (n2:{entity} {{id: line.END_ID}})
-                        MERGE (n1)-[:HAS_PARENT]->(n2)
-                        RETURN COUNT(*) as relationship_count
-                    }}
-                    RETURN relationship_count
-                    '''
-                    result = await tx.run(load_has_parent_query)
-                    records = await result.fetch()
-                    if records:
-                        logging.info(f"Loaded {records[0]['relationship_count']} HAS_PARENT relationships for {entity}")
-                except Exception as e:
-                    logging.error(f"Error loading HAS_PARENT relationships for {entity}: {e}")
+                    try:
+                        load_entity_query = f'''
+                        CALL {{
+                            LOAD CSV WITH HEADERS FROM "file:///{entity}.tsv" as line
+                            FIELDTERMINATOR "\\t"
+                            MERGE (n:{entity}:ENTITY {{id: line.id}})
+                            ON CREATE SET n.name = line.name,
+                                            n.description = line.description,
+                                            n.type = line.type,
+                                            n.synonyms = CASE WHEN line.synonyms IS NOT NULL AND line.synonyms <> ''
+                                                THEN split(line.synonyms, ",")
+                                                ELSE [] END
+                            RETURN COUNT(n) as entity_count
+                        }}
+                        RETURN entity_count
+                        '''
+                        result = await tx.run(load_entity_query)
+                        records = await result.fetch()
+                        if records:
+                            logging.info(f"Loaded {records[0]['entity_count']} {entity} entities")
+                    except Exception as e:
+                        logging.error(f"Error loading {entity} entities: {e}")
 
-    await driver.close()
+                    try:
+                        load_has_parent_query = f'''
+                        CALL {{
+                            LOAD CSV WITH HEADERS FROM "file:///{entity}_has_parent.tsv" as line
+                            FIELDTERMINATOR "\\t"
+                            MATCH (n1:{entity} {{id: line.START_ID}})
+                            MATCH (n2:{entity} {{id: line.END_ID}})
+                            MERGE (n1)-[:HAS_PARENT]->(n2)
+                            RETURN COUNT(*) as relationship_count
+                        }}
+                        RETURN relationship_count
+                        '''
+                        result = await tx.run(load_has_parent_query)
+                        records = await result.fetch()
+                        if records:
+                            logging.info(f"Loaded {records[0]['relationship_count']} HAS_PARENT relationships for {entity}")
+                    except Exception as e:
+                        logging.error(f"Error loading HAS_PARENT relationships for {entity}: {e}")
+
+                await tx.commit()
+                logging.info("Transaction committed successfully")
+        except Exception as e:
+            logging.error(f"Error in transaction: {e}")
+            # No need to explicitly rollback; it's handled automatically
+        finally:
+            await driver.close()
+
 
 async def import_biomarkers():
     """Import the biomarkers into the Neo4j database."""
