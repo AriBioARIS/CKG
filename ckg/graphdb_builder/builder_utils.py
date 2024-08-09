@@ -352,7 +352,6 @@ def setup_config(data_type="databases"):
         dirname = os.path.join(ckg_utils.read_ckg_config(key='ckg_directory'), 'graphdb_builder')
         file_name = '{}/{}_config.yml'.format(data_type, data_type)
         config = ckg_utils.get_configuration(os.path.join(dirname, file_name))
-        print(json.dumps(config, indent=4))
     except Exception as err:
         raise Exception("builder_utils - Reading configuration > {}.".format(err))
 

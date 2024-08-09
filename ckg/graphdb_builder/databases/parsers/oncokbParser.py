@@ -9,6 +9,7 @@ from ckg.graphdb_builder import mapping as mp, builder_utils
 def parser(databases_directory, download=True):
     config = builder_utils.get_config(config_name="oncokbConfig.yml", data_type='databases')
     url_actionable = config['OncoKB_actionable_url']
+    
     url_annotation = config['OncoKB_annotated_url']
     amino_acids = config['amino_acids']
     entities_header = config['entities_header']
