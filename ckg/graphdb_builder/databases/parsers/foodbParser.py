@@ -8,7 +8,6 @@ import pandas as pd
 #       FooDB     #
 ###################
 
-
 def parser(databases_directory, download=True):
     relationships = defaultdict(set)
     directory = os.path.join(databases_directory, "FooDB")

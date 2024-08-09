@@ -1435,9 +1435,57 @@ async def import_pathways():
                 logging.error(f"Error creating index: {e}")
 
             try:
-                pathway_query = '''
+                smpdb_pathway_query = '''
                 CALL {
-                    LOAD CSV WITH HEADERS FROM "file:///RESOURCE_Pathway.tsv" AS line
+                    LOAD CSV WITH HEADERS FROM "file:///smpdb_protein_annotated_to_pathway.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Protein {id: line.START_ID})
+                    MATCH (a:Pathway {id: line.END_ID})
+                    MERGE (p)-[r:ANNOTATED_IN_PATHWAY {
+                        evidence: line.evidence,
+                        organism: line.organism,
+                        cellular_component: line.cellular_component,
+                        source: line.source
+                    }]->(a)
+                    RETURN COUNT(r) AS protein_pathway_count
+                }
+                RETURN protein_pathway_count;
+                '''
+                result = await tx.run(smpdb_pathway_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['protein_pathway_count']} ANNOTATED_IN_PATHWAY relationships")
+            except Exception as e:
+                logging.error(f"Error loading ANNOTATED_IN_PATHWAY relationships: {e}")
+
+            try:
+                reactome_pathway_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///reactome_protein_annotated_to_pathway.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Protein {id: line.START_ID})
+                    MATCH (a:Pathway {id: line.END_ID})
+                    MERGE (p)-[r:ANNOTATED_IN_PATHWAY {
+                        evidence: line.evidence,
+                        organism: line.organism,
+                        cellular_component: line.cellular_component,
+                        source: line.source
+                    }]->(a)
+                    RETURN COUNT(r) AS protein_pathway_count
+                }
+                RETURN protein_pathway_count;
+                '''
+                result = await tx.run(reactome_pathway_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['protein_pathway_count']} ANNOTATED_IN_PATHWAY relationships")
+            except Exception as e:
+                logging.error(f"Error loading ANNOTATED_IN_PATHWAY relationships: {e}")
+
+            try:
+                smpdb_pathway_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///smpdb_Pathway.tsv" AS line
                     FIELDTERMINATOR '\\t'
                     MERGE (p:Pathway {id: line.ID})
                     ON CREATE SET p.name = line.name,
@@ -1449,3 +1497,283 @@ async def import_pathways():
                 }
                 RETURN pathway_count;
                 '''
+                result = await tx.run(smpdb_pathway_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['pathway_count']} pathways")
+            except Exception as e:
+                logging.error(f"Error loading pathways: {e}")
+
+            try:
+                smpdb_metabolite_pathway_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///smpdb_metabolite_annotated_to_pathway.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (m:Metabolite {id: line.START_ID})
+                    MATCH (a:Pathway {id: line.END_ID})
+                    MERGE (m)-[r:ANNOTATED_IN_PATHWAY {
+                        evidence: line.evidence,
+                        organism: line.organism,
+                        cellular_component: line.cellular_component,
+                        source: line.source
+                    }]->(a)
+                    RETURN COUNT(r) AS metabolite_pathway_count
+                }
+                RETURN metabolite_pathway_count;
+                '''
+                result = await tx.run(smpdb_metabolite_pathway_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['metabolite_pathway_count']} ANNOTATED_IN_PATHWAY relationships")
+            except Exception as e:
+                logging.error(f"Error loading ANNOTATED_IN_PATHWAY relationships: {e}")
+
+            try:
+                reactome_metabolite_pathway_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///reactome_metabolite_annotated_to_pathway.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (m:Metabolite {id: line.START_ID})
+                    MATCH (a:Pathway {id: line.END_ID})
+                    MERGE (m)-[r:ANNOTATED_IN_PATHWAY {
+                        evidence: line.evidence,
+                        organism: line.organism,
+                        cellular_component: line.cellular_component,
+                        source: line.source
+                    }]->(a)
+                    RETURN COUNT(r) AS metabolite_pathway_count
+                }
+                RETURN metabolite_pathway_count;
+                '''
+                result = await tx.run(reactome_metabolite_pathway_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['metabolite_pathway_count']} ANNOTATED_IN_PATHWAY relationships")
+            except Exception as e:
+                logging.error(f"Error loading ANNOTATED_IN_PATHWAY relationships: {e}")
+
+            """
+            try:
+                smpdb_drug_pathway_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///RESOURCE_drug_annotated_to_pathway.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (d:Drug {id: line.START_ID})
+                    MATCH (a:Pathway {id: line.END_ID})
+                    MERGE (d)-[r:ANNOTATED_IN_PATHWAY {
+                        evidence: line.evidence,
+                        organism: line.organism,
+                        cellular_component: line.cellular_component,
+                        source: line.source
+                    }]->(a)
+                    RETURN COUNT(r) AS drug_pathway_count
+                }
+                RETURN drug_pathway_count;
+                '''
+                result = await tx.run(smpdb_drug_pathway_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['drug_pathway_count']} ANNOTATED_IN_PATHWAY relationships")
+            except Exception as e:
+                logging.error(f"Error loading ANNOTATED_IN_PATHWAY relationships: {e}")
+            """
+
+    await driver.close()
+
+async def import_metabolites():
+
+    driver = await get_driver()
+    async with driver.session() as session:
+        async with session.begin_transaction() as tx:
+            try:
+                constraint_query = '''
+                CREATE CONSTRAINT IF NOT EXISTS FOR (m:Metabolite) REQUIRE m.id IS UNIQUE;
+                '''
+                await tx.run(constraint_query)
+                logging.info("Created constraint for Metabolite")
+            except Exception as e:
+                logging.error(f"Error creating constraint: {e}")
+
+            try:
+                index_query = '''
+                CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
+                CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.name);
+                CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
+                '''
+                await tx.run(index_query)
+                logging.info("Created index for Metabolite id, Metabolite name, Protein id, and Drug id")
+            except Exception as e:
+                logging.error(f"Error creating index: {e}")
+
+            try:
+                metabolite_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Metabolite.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MERGE (m:Metabolite {id: line.ID})
+                    ON CREATE SET m.name = line.name,
+                                m.synonyms = line.synonyms,
+                                m.description = line.description,
+                                m.direct_parent = line.direct_parent,
+                                m.kingdom = line.kingdom,
+                                m.class = line.class,
+                                m.super_class = line.super_class,
+                                m.sub_class = line.sub_class,
+                                m.chemical_formula = line.chemical_formula,
+                                m.average_molecular_weight = line.average_molecular_weight,
+                                m.monoisotopic_molecular_weight = line.monoisotopic_molecular_weight,
+                                m.chebi_id = line.chebi_id,
+                                m.pubchem_compound_id = line.pubchem_compound_id,
+                                m.food_id = line.food_id
+                    RETURN COUNT(m) AS metabolite_count
+                }
+                RETURN metabolite_count;
+                '''
+                result = await tx.run(metabolite_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['metabolite_count']} metabolites")
+            except Exception as e:
+                logging.error(f"Error loading metabolites: {e}")
+
+            try:
+                associated_with_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///hmdb_associated_with_protein.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (m:Metabolite {id: line.START_ID})
+                    MATCH (p:Protein {id: line.END_ID})
+                    MERGE (m)-[r:ASSOCIATED_WITH]->(p)
+                    RETURN COUNT(r) AS metabolite_protein_count
+                }
+                RETURN metabolite_protein_count;
+                '''
+                result = await tx.run(associated_with_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['metabolite_protein_count']} ASSOCIATED_WITH relationships")
+            except Exception as e:
+                logging.error(f"Error loading ASSOCIATED_WITH relationships: {e}")
+
+            try:
+                associated_with_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///RESOURCE_associated_with_disease.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (m:Metabolite {id: line.START_ID})
+                    MATCH (d:Disease {id: line.END_ID})
+                    MERGE (m)-[r:ASSOCIATED_WITH]->(d)
+                    RETURN COUNT(r) AS metabolite_disease_count
+                }
+                RETURN metabolite_disease_count;
+                '''
+                result = await tx.run(associated_with_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['metabolite_disease_count']} ASSOCIATED_WITH relationships")
+
+            except Exception as e:
+                logging.error(f"Error loading ASSOCIATED_WITH relationships: {e}")
+
+            """
+            try:
+                associated_with_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///RESOURCE_associated_with_tissue.tsv" AS line
+                    FIELDTERMINATOR '\t'
+                    MATCH (m:Metabolite {id: line.START_ID})
+                    MATCH (t:Tissue {id: line.END_ID})
+                    MERGE (m)-[r:ASSOCIATED_WITH]->(t)
+                    RETURN COUNT(r) AS metabolite_tissue_count
+                }
+                RETURN metabolite_tissue_count;
+                '''
+                result = await tx.run(associated_with_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['metabolite_tissue_count']} ASSOCIATED_WITH relationships")
+            except Exception as e:
+                logging.error(f"Error loading ASSOCIATED_WITH relationships: {e}")
+            """
+
+    await driver.close()
+
+async def import_food():
+
+    driver = await get_driver()
+    async with driver.session() as session:
+        async with session.begin_transaction() as tx:
+
+            try:
+                constraint_query = '''
+                CREATE CONSTRAINT IF NOT EXISTS FOR (f:Food) REQUIRE f.id IS UNIQUE;
+                '''
+                await tx.run(constraint_query)
+                logging.info("Created constraint for Food")
+            except Exception as e:
+                logging.error(f"Error creating constraint: {e}")
+
+            try:
+                index_query = '''
+                CREATE INDEX IF NOT EXISTS FOR (f:Food) ON (f.id);
+                CREATE INDEX IF NOT EXISTS FOR (f:Food) ON (f.name);
+                CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
+                '''
+                await tx.run(index_query)
+                logging.info("Created index for Food id, Food name, and Metabolite id")
+
+            except Exception as e:
+                logging.error(f"Error creating index: {e}")
+
+            try:
+                food_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Food.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MERGE (f:Food {id: line.ID})
+                    ON CREATE SET f.name = line.name,
+                                f.scientific_name = line.scientific_name,
+                                f.description = line.description,
+                                f.group = line.group,
+                                f.subgroup = line.subgroup,
+                                f.source = line.source
+                    RETURN COUNT(f) AS food_count
+                }
+                RETURN food_count;
+                '''
+                result = await tx.run(food_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['food_count']} foods")
+            except Exception as e:
+                logging.error(f"Error loading foods: {e}")
+
+            """
+            try:
+                food_metabolite_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///_food_has_content.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (f:Food {id: line.START_ID})
+                    MATCH (m:Metabolite {id: line.END_ID})
+                    MERGE (f)-[r:HAS_CONTENT {
+                        minimum: line.min,
+                        maximum: line.max,
+                        average: line.average,
+                        units: line.units,
+                        source: line.source
+                    }]->(m)
+                    RETURN COUNT(r) AS food_content_count
+                }
+                RETURN food_content_count;
+                '''
+                result = await tx.run(food_metabolite_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['food_content_count']} HAS_CONTENT relationships")
+            except Exception as e:
+                logging.error(f"Error loading HAS_CONTENT relationships: {e}")
+            """
+            
+    await driver.close()
+

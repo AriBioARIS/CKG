@@ -3,8 +3,6 @@ import pandas as pd
 from collections import defaultdict
 from ckg.graphdb_builder import mapping as mp, builder_utils
 
-
-
 def parser(databases_dir, download=True):
     config = builder_utils.get_config(config_name="goaConfig.yml", data_type='databases')
     url = config['url']
