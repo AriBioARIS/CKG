@@ -13,6 +13,7 @@ async def import_ontologies():
     """Import the ontologies into the Neo4j database."""
     driver = await get_driver()
     async with driver.session() as session:
+        # First, perform all schema modifications
         try:
             tx = await session.begin_transaction()
             try:
@@ -40,6 +41,26 @@ async def import_ontologies():
                         except Exception as e:
                             logging.error(f"Error creating index for {entity} {index_type}: {e}")
 
+                await tx.commit()
+                logging.info("Schema modifications committed successfully")
+            except Exception as e:
+                await tx.rollback()
+                logging.error(f"Error in schema modification transaction, rolling back: {e}")
+            finally:
+                await tx.close()
+
+        except Exception as e:
+            logging.error(f"Error in schema modification session: {e}")
+
+        # Now, perform data writing operations
+        try:
+            tx = await session.begin_transaction()
+            try:
+                for entity in [
+                    "Disease", "Tissue", "Clinical_variable", "Phenotype",
+                    "Modification", "Molecular_interaction", "Biological_process",
+                    "Molecular_function", "Cellular_component", "Experimental_factor",
+                ]:
                     try:
                         load_entity_query = f'''
                         CALL {{
@@ -83,16 +104,19 @@ async def import_ontologies():
                         logging.error(f"Error loading HAS_PARENT relationships for {entity}: {e}")
 
                 await tx.commit()
-                logging.info("Transaction committed successfully")
+                logging.info("Data writing transaction committed successfully")
             except Exception as e:
                 await tx.rollback()
-                logging.error(f"Error in transaction, rolling back: {e}")
+                logging.error(f"Error in data writing transaction, rolling back: {e}")
             finally:
                 await tx.close()
+
         except Exception as e:
-            logging.error(f"Error in session: {e}")
+            logging.error(f"Error in data writing session: {e}")
+
         finally:
             await driver.close()
+
 
 
 async def import_biomarkers():
