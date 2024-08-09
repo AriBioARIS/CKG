@@ -1774,6 +1774,270 @@ async def import_food():
             except Exception as e:
                 logging.error(f"Error loading HAS_CONTENT relationships: {e}")
             """
-            
+
     await driver.close()
 
+async def import_jensen_lab():
+
+    driver = await get_driver()
+    async with driver.session() as session:
+        async with session.begin_transaction() as tx:
+
+            try:
+                protein_cellular_component_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Protein_Cellular_component_associated_with_integrated.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Protein {id: line.START_ID})
+                    MATCH (d:Cellular_component {id: line.END_ID})
+                    MERGE (p)-[r:ASSOCIATED_WITH {
+                        score: toFloat(line.score),
+                        source: line.source,
+                        evidence_type: line.evidence_type
+                    }]->(d)
+                    RETURN COUNT(r) AS jensenlab_association_count
+                }
+                RETURN jensenlab_association_count;
+                '''
+                result = await tx.run(protein_cellular_component_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['jensenlab_association_count']} ASSOCIATED_WITH relationships")
+            except Exception as e:
+                logging.error(f"Error loading ASSOCIATED_WITH relationships: {e}")
+
+            try:
+                protein_disease_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Protein_Disease_associated_with_integrated.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Protein {id: line.START_ID})
+                    MATCH (d:Disease {id: line.END_ID})
+                    MERGE (p)-[r:ASSOCIATED_WITH {
+                        score: toFloat(line.score),
+                        source: line.source,
+                        evidence_type: line.evidence_type
+                    }]->(d)
+                    RETURN COUNT(r) AS jensenlab_association_count
+                }
+                RETURN jensenlab_association_count;
+                '''
+                result = await tx.run(protein_disease_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['jensenlab_association_count']} ASSOCIATED_WITH relationships")
+            except Exception as e:
+                logging.error(f"Error loading ASSOCIATED_WITH relationships: {e}")
+
+            try:
+                protein_tissue_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Protein_Tissue_associated_with_integrated.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Protein {id: line.START_ID})
+                    MATCH (t:Tissue {id: line.END_ID})
+                    MERGE (p)-[r:ASSOCIATED_WITH {
+                        score: toFloat(line.score),
+                        source: line.source,
+                        evidence_type: line.evidence_type
+                    }]->(t)
+                    RETURN COUNT(r) AS jensenlab_association_count
+                }
+                RETURN jensenlab_association_count;
+                '''
+
+                result = await tx.run(protein_tissue_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['jensenlab_association_count']} ASSOCIATED_WITH relationships")
+            except Exception as e:
+                logging.error(f"Error loading ASSOCIATED_WITH relationships: {e}")
+
+    await driver.close()
+
+async def import_publications():
+
+    driver = await get_driver()
+    async with driver.session() as session:
+        async with session.begin_transaction() as tx:
+            try:
+                constraint_query = '''
+                CREATE CONSTRAINT IF NOT EXISTS FOR (p:Publication) REQUIRE p.id IS UNIQUE;
+                '''
+                await tx.run(constraint_query)
+                logging.info("Created constraint for Publication")
+            except Exception as e:
+                logging.error(f"Error creating constraint: {e}")
+
+            try:
+                index_query = '''
+                CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
+                CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.title);
+                '''
+                await tx.run(index_query)
+                logging.info("Created index for Publication id and Publication title")
+
+            except Exception as e:
+                logging.error(f"Error creating index: {e}")
+
+            try:
+                publication_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Publications.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MERGE (p:Publication {id: line.ID})
+                    ON CREATE SET p.linkout = line.linkout,
+                                p.journal = line.journal_title,
+                                p.PMC_id = line.pmcid,
+                                p.year = CASE WHEN line.year IS NOT NULL AND line.year <> '' 
+                                                THEN toInteger(line.year) 
+                                                ELSE null END,
+                                p.volume = line.volume,
+                                p.issue = line.issue,
+                                p.page = line.page,
+                                p.DOI = line.doi
+                    RETURN COUNT(p) AS publication_count
+                }
+                RETURN publication_count;
+                '''
+                result = await tx.run(publication_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['publication_count']} publications")
+            except Exception as e:
+                logging.error(f"Error loading publications: {e}")
+
+    await driver.close()
+
+async def import_mentions():
+
+    driver = await get_driver()
+
+    async with driver.session() as session:
+        async with session.begin_transaction() as tx:
+
+            try:
+                mention_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Cellular_component_Publication_mentioned_in_publication.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Publication {id: line.START_ID})
+                    MATCH (e:Cellular_component {id: line.END_ID})
+                    MERGE (e)-[r:MENTIONED_IN_PUBLICATION]->(p)
+                    RETURN COUNT(r) AS mentioned_in_publication_count
+                }
+                RETURN mentioned_in_publication_count;
+                '''
+                result = await tx.run(mention_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['mentioned_in_publication_count']} MENTIONED_IN_PUBLICATION relationships")
+            except Exception as e:
+                logging.error(f"Error loading MENTIONED_IN_PUBLICATION relationships: {e}")
+
+            try:
+                mention_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Disease_Publication_mentioned_in_publication.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Publication {id: line.START_ID})
+                    MATCH (e:Disease {id: line.END_ID})
+                    MERGE (e)-[r:MENTIONED_IN_PUBLICATION]->(p)
+                    RETURN COUNT(r) AS mentioned_in_publication_count
+                }
+                RETURN mentioned_in_publication_count;
+                '''
+                result = await tx.run(mention_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['mentioned_in_publication_count']} MENTIONED_IN_PUBLICATION relationships")
+            except Exception as e:
+                logging.error(f"Error loading MENTIONED_IN_PUBLICATION relationships: {e}")
+
+            """
+            try:
+                mention_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Drug_Publication_mentioned_in_publication.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Publication {id: line.START_ID})
+                    MATCH (e:Drug {id: line.END_ID})
+                    MERGE (e)-[r:MENTIONED_IN_PUBLICATION]->(p)
+                    RETURN COUNT(r) AS mentioned_in_publication_count
+                }
+                RETURN mentioned_in_publication_count;
+                '''
+                result = await tx.run(mention_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['mentioned_in_publication_count']} MENTIONED_IN_PUBLICATION relationships")
+            except Exception as e:
+                logging.error(f"Error loading MENTIONED_IN_PUBLICATION relationships: {e}")
+            """
+            try:
+                mention_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Functional_region_Publication_mentioned_in_publication.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Publication {id: line.START_ID})
+                    MATCH (e:Functional_region {id: line.END_ID})
+                    MERGE (e)-[r:MENTIONED_IN_PUBLICATION]->(p)
+                    RETURN COUNT(r) AS mentioned_in_publication_count
+                }
+                RETURN mentioned_in_publication_count;
+                '''
+                result = await tx.run(mention_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['mentioned_in_publication_count']} MENTIONED_IN_PUBLICATION relationships")
+            except Exception as e:
+                logging.error(f"Error loading MENTIONED_IN_PUBLICATION relationships: {e}")
+
+            try:
+                mention_query = '''
+                CALL {
+                    LOAD CSV WITH HEADERS FROM "file:///Metabolite_Publication_Publication_mentioned_in_publication.tsv" AS line
+                    FIELDTERMINATOR '\\t'
+                    MATCH (p:Publication {id: line.START_ID})
+                    MATCH (e:Metabolite_Publication {id: line.END_ID})
+                    MERGE (e)-[r:MENTIONED_IN_PUBLICATION]->(p)
+                    RETURN COUNT(r) AS mentioned_in_publication_count
+                }
+                RETURN mentioned_in_publication_count;
+                '''
+                result = await tx.run(mention_query)
+                records = await result.fetch()
+                if records:
+                    logging.info(f"Loaded {records[0]['mentioned_in_publication_count']} MENTIONED_IN_PUBLICATION relationships")
+            except Exception as e:
+                logging.error(f"Error loading MENTIONED_IN_PUBLICATION relationships: {e}")
+
+    await driver.close()                
+
+async def main():
+    await import_ontologies()
+    # await import_biomarkers()
+    # await import_qc_markers()
+    await import_chromosomes()
+    await import_genes()
+    await import_transcripts()
+    await import_proteins()
+    await import_functional_regions()
+    await import_annotations()
+    # await import_complexes()
+    await import_pathology_expression()
+    await import_ppi()
+    await import_protein_structure()
+    # await import_diseases()
+    # await import_drugs()
+    # await import side_effects()
+    await import_pathways()
+    await import_metabolites()
+    await import_food()
+    await import_jensen_lab()
+    await import_publications()
+    await import_mentions()
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
