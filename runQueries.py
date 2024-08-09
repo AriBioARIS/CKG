@@ -9,13 +9,13 @@ async def get_driver() -> AsyncGraphDatabase:
             "neo4j", "ari101013!"
         )
     )
-
 async def import_ontologies():
     """Import the ontologies into the Neo4j database."""
     driver = await get_driver()
     async with driver.session() as session:
         try:
-            async with session.begin_transaction() as tx:
+            tx = await session.begin_transaction()
+            try:
                 for entity in [
                     "Disease", "Tissue", "Clinical_variable", "Phenotype",
                     "Modification", "Molecular_interaction", "Biological_process",
@@ -84,9 +84,13 @@ async def import_ontologies():
 
                 await tx.commit()
                 logging.info("Transaction committed successfully")
+            except Exception as e:
+                await tx.rollback()
+                logging.error(f"Error in transaction, rolling back: {e}")
+            finally:
+                await tx.close()
         except Exception as e:
-            logging.error(f"Error in transaction: {e}")
-            # No need to explicitly rollback; it's handled automatically
+            logging.error(f"Error in session: {e}")
         finally:
             await driver.close()
 
