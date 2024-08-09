@@ -83,7 +83,6 @@ IMPORT_PROTEIN_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.name);
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.accession);
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (a:Amino_acid_sequence) ON (a.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Peptide) ON (p.id);
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Protein) REQUIRE p.id IS UNIQUE;
@@ -167,7 +166,6 @@ IMPORT_FUNCTIONAL_REGIONS:
     'description': 'Creates Functional Regions nodes and their relationships to Protein and Publication nodes'
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Functional_region) REQUIRE f.id IS UNIQUE;
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Functional_region.tsv" AS line
@@ -210,8 +208,6 @@ IMPORT_MODIFIED_PROTEINS:
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (m:Modified_protein) REQUIRE m.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR (p:Peptide) ON (p.id);
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Modified_protein.tsv" AS line
             FIELDTERMINATOR '\t'
@@ -270,7 +266,6 @@ IMPORT_PROTEIN_ANNOTATIONS:
     'name': 'import protein annotations'
     'description': 'Loads into the database all the Protein nodes annotations: Gene Ontology terms'
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (c:Cellular_component) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (f:Molecular_function) ON (f.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
@@ -322,7 +317,6 @@ IMPORT_PATHOLOGY_EXPRESSION:
     'name': 'import pathology expression'
     'description': 'Loads into the database the relationships between Protein and Disease nodes based on expression (IHC, RNA) where there was a positive or negative prognosis'
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
 
         CALL {
@@ -350,7 +344,6 @@ IMPORT_COMPLEXES:
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (c:Complex) REQUIRE c.id IS UNIQUE;
         CREATE CONSTRAINT IF NOT EXISTS FOR (c:Complex) REQUIRE c.name IS UNIQUE;
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
 
         CALL {
@@ -445,7 +438,6 @@ IMPORT_PROTEIN_STRUCTURES:
     'description': 'Creates Protein structure nodes and their relationships to Protein nodes'
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Protein_structure) REQUIRE p.id IS UNIQUE;
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_structures.tsv" AS line
@@ -552,8 +544,6 @@ IMPORT_CURATED_PPI_DATA:
     'name': 'import curated Protein-Protein interaction data'
     'description': 'Loads into the database all the PPI from curated sources i.e. Intact database'
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with.tsv" AS line
             FIELDTERMINATOR '\t'
@@ -654,7 +644,6 @@ IMPORT_MENTIONS:
     'description': 'Loads all the co-mentioned terms extracted from the text-mining pipeline developed in jensenlab.org'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_Publication_mentioned_in_publication.tsv" AS line
@@ -852,8 +841,6 @@ IMPORT_COMPILED_DRUG_DATA:
     'description': 'Loads all the relationships between Drug and Gene nodes targeted from resources that compile/aggregate different evidence from several sources, i.e. STITCH database'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
@@ -878,8 +865,6 @@ IMPORT_PPI_ACTION:
     'name': 'import Protein-Protein interaction action data'
     'description': 'Loads all the PPI and the resulting activity of the interaction'
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_acts_on_protein.tsv" AS line
             FIELDTERMINATOR '\t'
@@ -933,8 +918,6 @@ IMPORT_DRUG_ACTS_ON:
     'description': 'Loads all the Drug actions on Proteins, i.e. inhibition'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_drug_acts_on_protein.tsv" AS line
             FIELDTERMINATOR '\t'
@@ -955,7 +938,6 @@ IMPORT_PATHWAY_DATA:
     'description': 'Creates the Pathway nodes and all the relationships to Protein, Drug and Metabolite nodes'
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Pathway) REQUIRE p.id IS UNIQUE;
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
 
@@ -1022,7 +1004,6 @@ IMPORT_METABOLITE_DATA:
     'description': 'Creates Metabolite nodes and their associations to Protein, Disease and Tissue nodes'
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (m:Metabolite) REQUIRE m.id IS UNIQUE;
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
 
@@ -1083,7 +1064,6 @@ IMPORT_FOOD_DATA:
     'description': 'Creates Food nodes and their relationship to Metabolite nodes'
     'query': >
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Food) REQUIRE f.id IS UNIQUE;
-        CREATE INDEX IF NOT EXISTS FOR (m:Metabolite) ON (m.id);
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Food.tsv" AS line
@@ -1119,7 +1099,6 @@ IMPORT_BIOMARKERS:
     'name': 'import protein biomarkers'
     'description': 'Creates relationships is_biomarker_of (Disease, ...)'
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
 
         CALL {
@@ -1148,7 +1127,6 @@ IMPORT_QCMARKERS:
     'name': 'import proteins used as quality marker in tissue'
     'description': 'Creates relationships is_qcmarker_in Tissue'
     'query': >
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
 
         CALL {
@@ -1170,7 +1148,6 @@ IMPORT_KNOWN_VARIANT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (k:Known_variant) ON (k.external_id);
         CREATE INDEX IF NOT EXISTS FOR (c:Chromosome) ON (c.id);
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
 
         CALL {
             LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Known_variant.tsv" AS line
@@ -1323,8 +1300,6 @@ proteomics_class: &proteomics_class
     'description': 'Loads into the database all the Proteomic data obtained in a Project: identified Protein, Peptide and Modified_protein nodes'
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (s:Analytical_sample) ON (s.id);
-        CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
-        CREATE INDEX IF NOT EXISTS FOR (p:Peptide) ON (p.id);
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
 
         CALL {
