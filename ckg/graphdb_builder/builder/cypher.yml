@@ -41,7 +41,7 @@ IMPORT_ONTOLOGY_DATA:
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.type);
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY) ON (e.id);
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///ENTITY.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (e:ENTITY {id: line.ID})
             ON CREATE SET e.name = line.name,
@@ -54,7 +54,7 @@ IMPORT_ONTOLOGY_DATA:
         }
         RETURN entity_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_has_parent.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///ENTITY_has_parent.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (e1:ENTITY {id: line.START_ID})
             MATCH (e2:ENTITY {id: line.END_ID})
@@ -68,7 +68,7 @@ IMPORT_ONTOLOGY_MAPPING_DATA:
     'description': "Creates relationships between different ontologies (i.e (EFO)-[:MAPS_TO]->(Disease)"
     'query': >
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY1_maps_to_ENTITY2.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///ENTITY1_maps_to_ENTITY2.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (e1 {id: line.START_ID})
             MATCH (e2 {id: line.END_ID})
@@ -91,7 +91,7 @@ IMPORT_PROTEIN_DATA:
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
         CREATE INDEX IF NOT EXISTS FOR (t:Transcript) ON (t.id);
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (p:Protein {id: line.ID})
             ON CREATE SET p.accession = line.accession,
@@ -105,7 +105,7 @@ IMPORT_PROTEIN_DATA:
         }
         RETURN protein_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Amino_acid_sequence.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Amino_acid_sequence.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (aa:Amino_acid_sequence {id: line.ID})
             ON CREATE SET aa.header = line.header,
@@ -116,7 +116,7 @@ IMPORT_PROTEIN_DATA:
         }
         RETURN aa_sequence_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_HAS_Sequence_Amino_acid_sequence.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Protein_HAS_Sequence_Amino_acid_sequence.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (aa:Amino_acid_sequence {id: line.END_ID})
@@ -125,7 +125,7 @@ IMPORT_PROTEIN_DATA:
         }
         RETURN has_sequence_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Peptide.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Peptide.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (p:Peptide {id: line.ID})
             ON CREATE SET p.type = line.type,
@@ -134,7 +134,7 @@ IMPORT_PROTEIN_DATA:
         }
         RETURN peptide_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Peptide_belongs_to_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Peptide_belongs_to_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p1:Peptide {id: line.START_ID})
             MATCH (p2:Protein {id: line.END_ID})
@@ -143,7 +143,7 @@ IMPORT_PROTEIN_DATA:
         }
         RETURN belongs_to_protein_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_gene_translated_into.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Protein_gene_translated_into.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (g:Gene {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -152,7 +152,7 @@ IMPORT_PROTEIN_DATA:
         }
         RETURN gene_translated_into_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_transcript_translated_into.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Protein_transcript_translated_into.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (t:Transcript {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -168,7 +168,7 @@ IMPORT_FUNCTIONAL_REGIONS:
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Functional_region) REQUIRE f.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Functional_region.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Functional_region.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (f:Functional_region {id: line.ID})
             ON CREATE SET f.name = line.name,
@@ -178,7 +178,7 @@ IMPORT_FUNCTIONAL_REGIONS:
         }
         RETURN functional_region_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Functional_region_found_in_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Functional_region_found_in_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (f:Functional_region {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -192,7 +192,7 @@ IMPORT_FUNCTIONAL_REGIONS:
         }
         RETURN found_in_protein_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Functional_region_mentioned_in_publication.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Functional_region_mentioned_in_publication.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (f:Functional_region {id: line.START_ID})
             MATCH (p:Publication {id: line.END_ID})
@@ -209,7 +209,7 @@ IMPORT_MODIFIED_PROTEINS:
         CREATE CONSTRAINT IF NOT EXISTS FOR (m:Modified_protein) REQUIRE m.id IS UNIQUE;
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Modified_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_Modified_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (m:Modified_protein {id: line.ID})
             ON CREATE SET m.protein = line.protein,
@@ -221,7 +221,7 @@ IMPORT_MODIFIED_PROTEINS:
         }
         RETURN modified_protein_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_modified_protein_has_modification.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_modified_protein_has_modification.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (mp:Modified_protein {id: line.START_ID})
             MATCH (m:Modification {id: line.END_ID})
@@ -230,7 +230,7 @@ IMPORT_MODIFIED_PROTEINS:
         }
         RETURN has_modification_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_has_modified_site.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_protein_has_modified_site.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (mp:Modified_protein {id: line.END_ID})
@@ -239,7 +239,7 @@ IMPORT_MODIFIED_PROTEINS:
         }
         RETURN protein_has_modified_site_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_peptide_has_modified_site.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_peptide_has_modified_site.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Peptide {id: line.START_ID})
             MATCH (mp:Modified_protein {id: line.END_ID})
@@ -248,7 +248,7 @@ IMPORT_MODIFIED_PROTEINS:
         }
         RETURN peptide_has_modified_site_count;
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_substrate_is_substrate_of.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_substrate_is_substrate_of.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (m:Modified_protein {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -271,7 +271,7 @@ IMPORT_PROTEIN_ANNOTATIONS:
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Cellular_component_associated_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Cellular_component_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (c:Cellular_component {id: line.END_ID})
@@ -285,7 +285,7 @@ IMPORT_PROTEIN_ANNOTATIONS:
         RETURN cellular_component_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Molecular_function_associated_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Molecular_function_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (f:Molecular_function {id: line.END_ID})
@@ -299,7 +299,7 @@ IMPORT_PROTEIN_ANNOTATIONS:
         RETURN molecular_function_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Biological_process_associated_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Biological_process_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (b:Biological_process {id: line.END_ID})
@@ -320,7 +320,7 @@ IMPORT_PATHOLOGY_EXPRESSION:
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_detected_in_pathology_sample.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_protein_detected_in_pathology_sample.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (d:Disease {id: line.END_ID})
@@ -347,7 +347,7 @@ IMPORT_COMPLEXES:
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Complex.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Complex.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (c:Complex {id: line.ID})
             ON CREATE SET c.name = line.name,
@@ -361,7 +361,7 @@ IMPORT_COMPLEXES:
         RETURN complex_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_is_subunit_of.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_protein_is_subunit_of.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (c:Complex {id: line.END_ID})
@@ -380,7 +380,7 @@ IMPORT_COMPLEXES:
         RETURN is_subunit_of_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_biological_process_associated_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_biological_process_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (c:Complex {id: line.START_ID})
             MATCH (b:Biological_process {id: line.END_ID})
@@ -401,32 +401,37 @@ IMPORT_MODIFIED_PROTEIN_ANNOTATIONS:
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_process) ON (b.id);
 
-        LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_disease_associated_with.tsv" AS line
-        FIELDTERMINATOR '\t'
-        MATCH (m:Modified_protein {id: line.START_ID})
-        MATCH (d:Disease {id: line.END_ID})
-        MERGE (m)-[r:ASSOCIATED_WITH {
-            score: toFloat(line.score),
-            source: line.source,
-            evidence_type: line.evidence_type,
-            publications: line.publications
-        }]->(d)
-        WITH COUNT(r) AS disease_associated_with_count
+        CALL {
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_disease_associated_with.tsv" AS line
+            FIELDTERMINATOR '\t'
+            MATCH (m:Modified_protein {id: line.START_ID})
+            MATCH (d:Disease {id: line.END_ID})
+            MERGE (m)-[r:ASSOCIATED_WITH {
+                score: toFloat(line.score),
+                source: line.source,
+                evidence_type: line.evidence_type,
+                publications: line.publications
+            }]->(d)
+            RETURN COUNT(r) AS disease_associated_with_count
+        }
+        RETURN disease_associated_with_count;
 
-        LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_biological_process_associated_with.tsv" AS line
-        FIELDTERMINATOR '\t'
-        MATCH (m:Modified_protein {id: line.START_ID})
-        MATCH (b:Biological_process {id: line.END_ID})
-        MERGE (m)-[r:ASSOCIATED_WITH {
-            score: toFloat(line.score),
-            source: line.source,
-            evidence_type: line.evidence_type,
-            publications: line.publications,
-            action: line.action
-        }]->(b)
-        WITH disease_associated_with_count, COUNT(r) AS biological_process_associated_with_count
+        CALL {
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_biological_process_associated_with.tsv" AS line
+            FIELDTERMINATOR '\t'
+            MATCH (m:Modified_protein {id: line.START_ID})
+            MATCH (b:Biological_process {id: line.END_ID})
+            MERGE (m)-[r:ASSOCIATED_WITH {
+                score: toFloat(line.score),
+                source: line.source,
+                evidence_type: line.evidence_type,
+                publications: line.publications,
+                action: line.action
+            }]->(b)
+            RETURN COUNT(r) AS biological_process_associated_with_count
+        }
+        RETURN biological_process_associated_with_count;
 
-        RETURN disease_associated_with_count, biological_process_associated_with_count;
 
 IMPORT_PROTEIN_STRUCTURES:
     'name': 'import protein structure data'
@@ -435,7 +440,7 @@ IMPORT_PROTEIN_STRUCTURES:
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Protein_structure) REQUIRE p.id IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_structures.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Protein_structures.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (s:Protein_structure {id: line.ID})
             ON CREATE SET s.source = line.source,
@@ -445,7 +450,7 @@ IMPORT_PROTEIN_STRUCTURES:
         RETURN protein_structure_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_has_structure.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Protein_has_structure.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (s:Protein_structure {id: line.END_ID})
@@ -462,7 +467,7 @@ IMPORT_GENE_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (g:Gene) REQUIRE g.name IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Gene.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Gene.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (g:Gene {id: line.ID})
             ON CREATE SET g.name = line.name,
@@ -484,7 +489,7 @@ IMPORT_TRANSCRIPT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Transcript.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Transcript.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (t:Transcript {id: line.ID})
             ON CREATE SET t.name = line.name,
@@ -496,7 +501,7 @@ IMPORT_TRANSCRIPT_DATA:
         RETURN transcript_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/refseq_located_in.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///refseq_located_in.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (t:Transcript {id: line.START_ID})
             MATCH (c:Chromosome {id: line.END_ID})
@@ -510,7 +515,7 @@ IMPORT_TRANSCRIPT_DATA:
         RETURN located_in_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/refseq_transcribed_into.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///refseq_transcribed_into.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (g:Gene {id: line.START_ID})
             MATCH (t:Transcript {id: line.END_ID})
@@ -526,7 +531,7 @@ IMPORT_CHROMOSOME_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (c:Chromosome) REQUIRE c.id IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Chromosome.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Chromosome.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (c:Chromosome {id: line.ID})
             ON CREATE SET c.name = line.name,
@@ -540,7 +545,7 @@ IMPORT_CURATED_PPI_DATA:
     'description': 'Loads into the database all the PPI from curated sources i.e. Intact database'
     'query': >
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_interacts_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p1:Protein {id: line.START_ID})
             MATCH (p2:Protein {id: line.END_ID})
@@ -568,7 +573,7 @@ IMPORT_COMPILED_PPI_DATA:
         CREATE INDEX IF NOT EXISTS FOR (p:Protein) ON (p.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_interacts_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p1:Protein {id: line.START_ID})
             MATCH (p2:Protein {id: line.END_ID})
@@ -597,7 +602,7 @@ IMPORT_JENSENLAB_DATA:
         CREATE INDEX IF NOT EXISTS FOR (e:ENTITY2) ON (e.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY1_ENTITY2_associated_with_integrated.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///ENTITY1_ENTITY2_associated_with_integrated.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:ENTITY1 {id: line.START_ID})
             MATCH (d:ENTITY2 {id: line.END_ID})
@@ -617,7 +622,7 @@ CREATE_PUBLICATIONS:
         CREATE CONSTRAINT IF NOT EXISTS FOR (p:Publication) REQUIRE p.id IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Publications.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Publications.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (p:Publication {id: line.ID})
             ON CREATE SET p.linkout = line.linkout,
@@ -641,7 +646,7 @@ IMPORT_MENTIONS:
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_Publication_mentioned_in_publication.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///ENTITY_Publication_mentioned_in_publication.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Publication {id: line.START_ID})
             MATCH (e:ENTITY {id: line.END_ID})
@@ -658,7 +663,7 @@ IMPORT_PUBLISHED_IN:
         CREATE INDEX IF NOT EXISTS FOR (p:Publication) ON (p.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_published_in_publication.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///ENTITY_published_in_publication.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (g:ENTITY {id: line.START_ID})
             MATCH (p:Publication {id: line.END_ID})
@@ -675,7 +680,7 @@ IMPORT_VARIANT_FOUND_IN_GWAS:
         CREATE INDEX IF NOT EXISTS FOR (g:GWAS_study) ON (g.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/GWAS_study_variant_found_in_gwas.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///GWAS_study_variant_found_in_gwas.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (v:Known_variant {external_id: line.START_ID})
             MATCH (g:GWAS_study {id: line.END_ID})
@@ -700,7 +705,7 @@ IMPORT_GWAS_STUDIES_TRAIT:
         CREATE INDEX IF NOT EXISTS FOR (e:Experimental_factor) ON (e.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/GWAS_study_studies_trait.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///GWAS_study_studies_trait.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (g:GWAS_study {id: line.START_ID})
             MATCH (e:Experimental_factor {id: line.END_ID})
@@ -717,7 +722,7 @@ IMPORT_DISEASE_DATA:
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/ENTITY_RESOURCE_associated_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///ENTITY_RESOURCE_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (e:ENTITY {id: line.START_ID})
             MATCH (d:Disease {id: line.END_ID})
@@ -738,7 +743,7 @@ IMPORT_DRUG_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (d:Drug) REQUIRE d.name IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Drug.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Drug.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (d:Drug {id: line.ID})
             ON CREATE SET 
@@ -795,7 +800,7 @@ IMPORT_DRUG_INTERACTION_DATA:
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_interacts_with_drug.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_interacts_with_drug.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d1:Drug {id: line.START_ID})
             MATCH (d2:Drug {id: line.END_ID})
@@ -815,7 +820,7 @@ IMPORT_CURATED_DRUG_DATA:
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_targets.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_targets.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d:Drug {id: line.START_ID})
             MATCH (g:Gene {id: line.END_ID})
@@ -837,7 +842,7 @@ IMPORT_COMPILED_DRUG_DATA:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d:Drug {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -861,7 +866,7 @@ IMPORT_PPI_ACTION:
     'description': 'Loads all the PPI and the resulting activity of the interaction'
     'query': >
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_acts_on_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_protein_acts_on_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p1:Protein {id: line.START_ID})
             MATCH (p2:Protein {id: line.END_ID})
@@ -883,7 +888,7 @@ IMPORT_DRUG_SIDE_EFFECTS:
         CREATE INDEX IF NOT EXISTS FOR (p:Phenotype) ON (p.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_has_side_effect.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_has_side_effect.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d:Drug {id: line.START_ID})
             MATCH (p:Phenotype {id: line.END_ID})
@@ -896,7 +901,7 @@ IMPORT_DRUG_SIDE_EFFECTS:
         RETURN side_effect_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_is_indicated_for.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_is_indicated_for.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d:Drug {id: line.START_ID})
             MATCH (p:Phenotype {id: line.END_ID})
@@ -914,7 +919,7 @@ IMPORT_DRUG_ACTS_ON:
     'query': >
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_drug_acts_on_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_drug_acts_on_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d:Drug {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -937,7 +942,7 @@ IMPORT_PATHWAY_DATA:
         CREATE INDEX IF NOT EXISTS FOR (d:Drug) ON (d.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Pathway.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_Pathway.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (p:Pathway {id: line.ID})
             ON CREATE SET p.name = line.name,
@@ -950,7 +955,7 @@ IMPORT_PATHWAY_DATA:
         RETURN pathway_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_protein_annotated_to_pathway.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_protein_annotated_to_pathway.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (a:Pathway {id: line.END_ID})
@@ -965,7 +970,7 @@ IMPORT_PATHWAY_DATA:
         RETURN protein_pathway_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_metabolite_annotated_to_pathway.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_metabolite_annotated_to_pathway.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (m:Metabolite {id: line.START_ID})
             MATCH (a:Pathway {id: line.END_ID})
@@ -980,7 +985,7 @@ IMPORT_PATHWAY_DATA:
         RETURN metabolite_pathway_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_drug_annotated_to_pathway.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_drug_annotated_to_pathway.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d:Drug {id: line.START_ID})
             MATCH (a:Pathway {id: line.END_ID})
@@ -1003,7 +1008,7 @@ IMPORT_METABOLITE_DATA:
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Metabolite.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Metabolite.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (m:Metabolite {id: line.ID})
             ON CREATE SET m.name = line.name,
@@ -1025,7 +1030,7 @@ IMPORT_METABOLITE_DATA:
         RETURN metabolite_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_associated_with_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (m:Metabolite {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -1035,7 +1040,7 @@ IMPORT_METABOLITE_DATA:
         RETURN metabolite_protein_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with_disease.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_associated_with_disease.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (m:Metabolite {id: line.START_ID})
             MATCH (d:Disease {id: line.END_ID})
@@ -1045,7 +1050,7 @@ IMPORT_METABOLITE_DATA:
         RETURN metabolite_disease_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with_tissue.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_associated_with_tissue.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (m:Metabolite {id: line.START_ID})
             MATCH (t:Tissue {id: line.END_ID})
@@ -1061,7 +1066,7 @@ IMPORT_FOOD_DATA:
         CREATE CONSTRAINT IF NOT EXISTS FOR (f:Food) REQUIRE f.id IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Food.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Food.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (f:Food {id: line.ID})
             ON CREATE SET f.name = line.name,
@@ -1075,7 +1080,7 @@ IMPORT_FOOD_DATA:
         RETURN food_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_food_has_content.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_food_has_content.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (f:Food {id: line.START_ID})
             MATCH (m:Metabolite {id: line.END_ID})
@@ -1097,7 +1102,7 @@ IMPORT_BIOMARKERS:
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/protein_is_biomarker_of_disease.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///protein_is_biomarker_of_disease.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (d:Disease {id: line.END_ID})
@@ -1125,7 +1130,7 @@ IMPORT_QCMARKERS:
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/protein_is_qcmarker_in_tissue.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///protein_is_qcmarker_in_tissue.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (t:Tissue {id: line.END_ID})
@@ -1145,7 +1150,7 @@ IMPORT_KNOWN_VARIANT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (g:Gene) ON (g.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Known_variant.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Known_variant.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (k:Known_variant {id: line.ID})
             ON CREATE SET k.pvariant_id = line.pvariant_id,
@@ -1161,7 +1166,7 @@ IMPORT_KNOWN_VARIANT_DATA:
         RETURN known_variant_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Chromosome_known_variant_found_in_chromosome.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Chromosome_known_variant_found_in_chromosome.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (k:Known_variant {id: line.START_ID})
             MATCH (c:Chromosome {id: line.END_ID})
@@ -1171,7 +1176,7 @@ IMPORT_KNOWN_VARIANT_DATA:
         RETURN variant_in_chromosome_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Gene_known_variant_found_in_gene.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Gene_known_variant_found_in_gene.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (k:Known_variant {id: line.START_ID})
             MATCH (g:Gene {id: line.END_ID})
@@ -1181,7 +1186,7 @@ IMPORT_KNOWN_VARIANT_DATA:
         RETURN variant_in_gene_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/Protein_known_variant_found_in_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///Protein_known_variant_found_in_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (k:Known_variant {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -1191,7 +1196,7 @@ IMPORT_KNOWN_VARIANT_DATA:
         RETURN variant_in_protein_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/mutation_curated_affects_interaction_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///mutation_curated_affects_interaction_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (k:Known_variant {pvariant_id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -1216,7 +1221,7 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
         CREATE INDEX IF NOT EXISTS FOR (d:Disease) ON (d.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_Clinically_relevant_variant.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_Clinically_relevant_variant.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (k:Clinically_relevant_variant {id: line.ID})
             ON CREATE SET k.alternative_names = line.alternative_names,
@@ -1232,7 +1237,7 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
         RETURN clinically_relevant_variant_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_known_variant_is_clinically_relevant.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_known_variant_is_clinically_relevant.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (k:Known_variant {pvariant_id: line.START_ID})
             MATCH (c:Clinically_relevant_variant {id: line.END_ID})
@@ -1242,7 +1247,7 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
         RETURN variant_is_clinically_relevant_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_targets_clinically_relevant_variant.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_targets_clinically_relevant_variant.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (d:Drug {id: line.START_ID})
             MATCH (k:Clinically_relevant_variant {id: line.END_ID})
@@ -1257,7 +1262,7 @@ IMPORT_CLINICALLY_RELEVANT_VARIANT_DATA:
         RETURN targets_clinically_relevant_variant_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/RESOURCE_associated_with.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///RESOURCE_associated_with.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (k:Clinically_relevant_variant {id: line.START_ID})
             MATCH (d:Disease {id: line.END_ID})
@@ -1278,7 +1283,7 @@ IMPORT_GWAS:
         CREATE CONSTRAINT IF NOT EXISTS FOR (g:GWAS_study) REQUIRE g.id IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/GWAS_study.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///GWAS_study.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (g:GWAS_study {id: line.ID})
             ON CREATE SET g.title = line.title,
@@ -1298,7 +1303,7 @@ proteomics_class: &proteomics_class
         CREATE INDEX IF NOT EXISTS FOR (m:Modification) ON (m.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_proteins.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_proteins.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (s:Analytical_sample {id: line.START_ID})
             MATCH (p:Protein {id: line.END_ID})
@@ -1323,7 +1328,7 @@ proteomics_class: &proteomics_class
         RETURN quantified_protein_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subject_peptide.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_subject_peptide.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (s:Analytical_sample {id: line.START_ID})
             MATCH (p:Peptide {id: line.END_ID})
@@ -1339,7 +1344,7 @@ proteomics_class: &proteomics_class
         CREATE CONSTRAINT IF NOT EXISTS FOR (m:Modified_protein) REQUIRE m.id IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_modifiedprotein.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (m:Modified_protein {id: line.ID})
             ON CREATE SET m.protein = line.protein,
@@ -1352,7 +1357,7 @@ proteomics_class: &proteomics_class
         RETURN modified_protein_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_modification.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_modifiedprotein_modification.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (mp:Modified_protein {id: line.START_ID})
             MATCH (p:Modification {id: line.END_ID})
@@ -1362,7 +1367,7 @@ proteomics_class: &proteomics_class
         RETURN modification_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_protein.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_modifiedprotein_protein.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Protein {id: line.START_ID})
             MATCH (mp:Modified_protein {id: line.END_ID})
@@ -1372,7 +1377,7 @@ proteomics_class: &proteomics_class
         RETURN protein_modified_site_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_peptide.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_modifiedprotein_peptide.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Peptide {id: line.START_ID})
             MATCH (mp:Modified_protein {id: line.END_ID})
@@ -1382,7 +1387,7 @@ proteomics_class: &proteomics_class
         RETURN peptide_modified_site_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_modifiedprotein_subject.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_modifiedprotein_subject.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (s:Analytical_sample {id: line.START_ID})
             MATCH (mp:Modified_protein {id: line.END_ID})
@@ -1413,7 +1418,7 @@ IMPORT_DATASETS:
             CREATE INDEX IF NOT EXISTS FOR (c:Clinical_variable) ON (c.id);
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subject_had_intervention.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_subject_had_intervention.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]->(subject:Subject {external_id: line.START_ID})
                 MATCH (intervention:Clinical_variable {id: line.END_ID})
@@ -1427,7 +1432,7 @@ IMPORT_DATASETS:
             RETURN intervention_count;
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_clinical_state.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_clinical_state.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]->(:Subject)<-[:BELONGS_TO_SUBJECT]-(b:Biological_sample {external_id: line.START_ID})
                 MATCH (c:Clinical_variable {id: line.END_ID})
@@ -1437,7 +1442,7 @@ IMPORT_DATASETS:
             RETURN clinical_state_count;
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_clinical_quant.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_clinical_quant.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]->(:Subject)<-[:BELONGS_TO_SUBJECT]-(b:Biological_sample {external_id: line.START_ID})
                 MATCH (c:Clinical_variable {id: line.END_ID})
@@ -1457,7 +1462,7 @@ IMPORT_DATASETS:
             CREATE INDEX IF NOT EXISTS FOR (a:Analytical_sample) ON (a.id);
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_somatic_mutation.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MERGE (s:Somatic_mutation {id: line.ID})
                 ON CREATE SET s.chromosome = line.chromosome,
@@ -1475,7 +1480,7 @@ IMPORT_DATASETS:
             RETURN somatic_mutation_count;
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_known_variant.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_somatic_mutation_known_variant.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MATCH (s:Somatic_mutation {id: line.START_ID})
                 MATCH (k:Known_variant {id: line.END_ID})
@@ -1485,7 +1490,7 @@ IMPORT_DATASETS:
             RETURN known_variant_count;
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_gene.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_somatic_mutation_gene.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MATCH (s:Somatic_mutation {id: line.START_ID})
                 MATCH (g:Gene {id: line.END_ID})
@@ -1495,7 +1500,7 @@ IMPORT_DATASETS:
             RETURN variant_in_gene_count;
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_chromosome.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_somatic_mutation_chromosome.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MATCH (s:Somatic_mutation {id: line.START_ID})
                 MATCH (c:Chromosome {id: line.END_ID})
@@ -1505,7 +1510,7 @@ IMPORT_DATASETS:
             RETURN variant_in_chromosome_count;
 
             CALL {
-                LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_somatic_mutation_sample.tsv" AS line
+                LOAD CSV WITH HEADERS FROM "file:///PROJECTID_somatic_mutation_sample.tsv" AS line
                 FIELDTERMINATOR '\t'
                 MATCH (a:Analytical_sample {id: line.START_ID})
                 MATCH (s:Somatic_mutation {id: line.END_ID})
@@ -1524,7 +1529,7 @@ CREATE_USER_NODE:
         CREATE CONSTRAINT IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/users.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///users.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (u:User {id: line.ID})
             ON CREATE SET u.acronym = line.acronym,
@@ -1552,7 +1557,7 @@ CREATE_PROJECT: &create_project
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.name);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_info.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_info.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (p:Project {id: line.external_id})
             ON CREATE SET p.internal_id = line.internal_id,
@@ -1574,7 +1579,7 @@ CREATE_PROJECT: &create_project
         RETURN project_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_studies_disease.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_studies_disease.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Project {id: line.START_ID})
             MATCH (d:Disease {name: line.END_ID})
@@ -1584,7 +1589,7 @@ CREATE_PROJECT: &create_project
         RETURN studies_disease_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_studies_intervention.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_studies_intervention.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Project {id: line.START_ID})
             MATCH (c:Clinical_variable {id: line.END_ID})
@@ -1594,7 +1599,7 @@ CREATE_PROJECT: &create_project
         RETURN studies_intervention_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_follows_up_project.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_follows_up_project.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p1:Project {id: line.START_ID})
             MATCH (p2:Project {id: line.END_ID})
@@ -1604,7 +1609,7 @@ CREATE_PROJECT: &create_project
         RETURN follows_up_project_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_studies_tissue.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_studies_tissue.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Project {id: line.START_ID})
             MATCH (t:Tissue {name: line.END_ID})
@@ -1621,7 +1626,7 @@ CREATE_RESPONSIBLE_USER: &create_responsible
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_responsibles.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_responsibles.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (u:User {name: line.START_ID})
             MATCH (p:Project {id: line.END_ID})
@@ -1638,7 +1643,7 @@ CREATE_PARTICIPANT_USER: &create_participant
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_participants.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_participants.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (u:User {name: line.START_ID})
             MATCH (p:Project {id: line.END_ID})
@@ -1657,7 +1662,7 @@ CREATE_SUBJECTS: &create_subject
         CREATE INDEX IF NOT EXISTS FOR (e:Experimental_factor) ON (e.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subjects.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_subjects.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (s:Subject {id: line.ID})
             ON CREATE SET s.external_id = line.external_id
@@ -1666,7 +1671,7 @@ CREATE_SUBJECTS: &create_subject
         RETURN subject_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_project.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_project.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (p:Project {id: line.START_ID})
             MATCH (s:Subject {id: line.END_ID})
@@ -1676,7 +1681,7 @@ CREATE_SUBJECTS: &create_subject
         RETURN enrolled_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_disease.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_disease.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]->(s:Subject {external_id: line.START_ID})
             MATCH (d:Disease {id: line.END_ID})
@@ -1686,7 +1691,7 @@ CREATE_SUBJECTS: &create_subject
         RETURN disease_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_experimental_factor.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_experimental_factor.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]->(s:Subject {external_id: line.START_ID})
             MATCH (e:Experimental_factor {id: line.END_ID})
@@ -1704,7 +1709,7 @@ CREATE_BIOSAMPLES: &create_bio
         CREATE INDEX IF NOT EXISTS FOR (t:Tissue) ON (t.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biological_samples.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_biological_samples.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (s:Biological_sample {id: line.ID})
             ON CREATE SET s.external_id = line.external_id
@@ -1713,7 +1718,7 @@ CREATE_BIOSAMPLES: &create_bio
         RETURN biosample_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_subject_biosample.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_subject_biosample.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (b:Biological_sample {id: line.START_ID})
             MATCH (s:Subject {id: line.END_ID})
@@ -1723,7 +1728,7 @@ CREATE_BIOSAMPLES: &create_bio
         RETURN biosample_subject_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosamples_info.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_biosamples_info.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]-(:Subject)<-[:BELONGS_TO_SUBJECT]-(s:Biological_sample {external_id: toString(line.ID)})
             SET s.quantity = line.quantity,
@@ -1738,7 +1743,7 @@ CREATE_BIOSAMPLES: &create_bio
         RETURN biosample_info_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosample_tissue.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_biosample_tissue.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]->(:Subject)<-[:BELONGS_TO_SUBJECT]-(b:Biological_sample {external_id: line.START_ID})
             MATCH (t:Tissue {id: line.END_ID})
@@ -1757,7 +1762,7 @@ CREATE_ANALYTICALSAMPLES: &create_ana
         CREATE INDEX IF NOT EXISTS FOR (p:Project) ON (p.id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_analytical_samples.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_analytical_samples.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (s:Analytical_sample {id: line.ID})
             ON CREATE SET s.external_id = line.external_id
@@ -1766,7 +1771,7 @@ CREATE_ANALYTICALSAMPLES: &create_ana
         RETURN analytical_sample_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosample_analytical.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_biosample_analytical.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (s1:Biological_sample {id: line.START_ID})
             MATCH (s2:Analytical_sample {id: line.END_ID})
@@ -1776,7 +1781,7 @@ CREATE_ANALYTICALSAMPLES: &create_ana
         RETURN split_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biosample_analytical_attributes.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_biosample_analytical_attributes.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]-(:Subject)-[:BELONGS_TO_SUBJECT]-(:Biological_sample {external_id: line.START_ID})-[r:SPLITTED_INTO]-(:Analytical_sample {external_id: line.END_ID})
             SET r.quantity = line.quantity,
@@ -1786,7 +1791,7 @@ CREATE_ANALYTICALSAMPLES: &create_ana
         RETURN split_attribute_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_analytical_samples_info.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_analytical_samples_info.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]-(:Subject)-[:BELONGS_TO_SUBJECT]-(:Biological_sample)-[:SPLITTED_INTO]-(s:Analytical_sample {external_id: toString(line.ID)})
             SET s.quantity = line.quantity,
@@ -1811,7 +1816,7 @@ CREATE_TIMEPOINT: &create_timepoint
         CREATE INDEX IF NOT EXISTS FOR (b:Biological_sample) ON (b.external_id);
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_timepoint.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_timepoint.tsv" AS line
             FIELDTERMINATOR '\t'
             MERGE (t:Timepoint {id: line.ID})
             ON CREATE SET t.units = line.units
@@ -1820,7 +1825,7 @@ CREATE_TIMEPOINT: &create_timepoint
         RETURN timepoint_count;
 
         CALL {
-            LOAD CSV WITH HEADERS FROM "file:///IMPORTDIR/PROJECTID_biological_sample_at_timepoint.tsv" AS line
+            LOAD CSV WITH HEADERS FROM "file:///PROJECTID_biological_sample_at_timepoint.tsv" AS line
             FIELDTERMINATOR '\t'
             MATCH (:Project {id: 'PROJECTID'})-[:HAS_ENROLLED]-(:Subject)-[:BELONGS_TO_SUBJECT]-(b:Biological_sample {external_id: line.START_ID})
             MATCH (t:Timepoint {id: line.END_ID})
