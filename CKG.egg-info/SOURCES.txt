@@ -47,8 +47,11 @@ ckg/graphdb_builder/builder/builder.py
 ckg/graphdb_builder/builder/builder_config.yml
 ckg/graphdb_builder/builder/create_user.py
 ckg/graphdb_builder/builder/cypher.yml
+ckg/graphdb_builder/builder/cypher_old.yml
+ckg/graphdb_builder/builder/cyphernew.yml
 ckg/graphdb_builder/builder/importer.py
 ckg/graphdb_builder/builder/loader.py
+ckg/graphdb_builder/builder/loadernew.py
 ckg/graphdb_builder/databases/__init__.py
 ckg/graphdb_builder/databases/databases_config.yml
 ckg/graphdb_builder/databases/databases_controller.py

@@ -2,7 +2,6 @@
 ftp_url: 'ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/'
 full_uniprot_file: 'Pfam-A.full.uniprot.gz'
 
-
 entity_header:
   - ID
   - TYPE

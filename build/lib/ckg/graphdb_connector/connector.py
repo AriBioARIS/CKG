@@ -95,18 +95,18 @@ def do_cypher_tx(tx, cypher, parameters):
 def commitQuery(driver, query, parameters={}):
     result = None
     try:
-        with driver.session() as session:
-            result = session.run(query, parameters)
+        with driver.session(database="neo4j") as session:
+            result = session.execute_write(lambda tx: tx.run(query, parameters))
     except neo4j.exceptions.ClientError as err:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        sys_error = "{}, file: {},line: {}".format(sys.exc_info(), fname, exc_tb.tb_lineno)
-        print("Connection error:{}.\n{}".format(err, sys_error))
+        sys_error = f"{sys.exc_info()}, file: {fname}, line: {exc_tb.tb_lineno}"
+        print(f"Neo4j ClientError: {err}. Query: {query[:100]}...\n{sys_error}")
     except Exception as err:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        sys_error = "{}, file: {},line: {}".format(sys.exc_info(), fname, exc_tb.tb_lineno)
-        raise Exception("Connection error:{}.\n{}".format(err, sys_error))
+        sys_error = f"{sys.exc_info()}, file: {fname}, line: {exc_tb.tb_lineno}"
+        print(f"Unexpected error: {err}. Query: {query[:100]}...\n{sys_error}", exc_info=True)
 
     return result
 
